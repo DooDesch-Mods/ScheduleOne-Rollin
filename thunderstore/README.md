@@ -5,11 +5,12 @@
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then bolt a rocket to
 > the back, put a crown on, and honk La Cucaracha at the police.
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Game](https://img.shields.io/badge/game-Schedule%20I-purple)
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
 
-![A tuned wheelchair with crown, rockets, flag and lightbar](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/tuned.jpg)
+![Rollin](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/header.jpg)
 
 ## Features
 
@@ -21,6 +22,8 @@
 - Everything is synced in co-op: who sits, who pushes, and every part on every chair. The host keeps each chair's
   tuning with the save.
 - Get up and the chair is a normal prop again. Sit down in it later and its tuning is back.
+
+![A tuned wheelchair with crown, rockets, flag and lightbar](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/tuned.jpg)
 
 ![Rolling up the skatepark bowl](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/driving.jpg)
 
