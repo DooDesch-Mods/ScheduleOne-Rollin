@@ -8,7 +8,7 @@ namespace Rollin.Tuning
 {
     /// <summary>
     /// Moves the parts that are more than a model, on every peer for its own copy of each chair: rims turn with the
-    /// wheel pivots, the hat sits on the rider's head, rocket flames and the thruster follow the speed, exhausts pop on
+    /// wheel pivots, the hat sits on the rider's head, the booster's thruster follows the speed, exhausts pop on
     /// hard braking, the lightbar flashes and the speakers bounce. Runs late in the frame, after the wheels moved.
     /// </summary>
     internal static class Effects
@@ -19,9 +19,9 @@ namespace Rollin.Tuning
             internal float NextScan;
             internal Transform PivotL, PivotR;
             internal Transform SpinL, SpinR, Hat;
+            /// <summary>The part the hat belongs to; it goes back there when the rider gets up.</summary>
+            internal Transform HatHome;
             internal readonly List<Renderer> HatRenderers = new List<Renderer>();
-            internal readonly List<Transform> Flames = new List<Transform>();
-            internal readonly List<Light> FlameLights = new List<Light>();
             internal readonly List<AudioSource> Thrusters = new List<AudioSource>();
             internal readonly List<Transform> Backfires = new List<Transform>();
             internal readonly List<Transform> Pulses = new List<Transform>();
@@ -32,9 +32,6 @@ namespace Rollin.Tuning
             internal float NextPop;
             internal Player HeadOf;
             internal Transform Head;
-            internal Vector3 HeadLocal;
-            internal bool HasHeadLocal;
-            internal float Lift = HatLift;
         }
 
         private static readonly Dictionary<IntPtr, State> _chairs = new Dictionary<IntPtr, State>();
@@ -48,33 +45,6 @@ namespace Rollin.Tuning
             {
                 if (lv != null && _chairs.TryGetValue(lv.Pointer, out var s)) s.NextScan = 0f;
             };
-            // The seated pose (BipedIK) bends the body after OnLateUpdate. At the end of the frame the head has its final
-            // pose; its spot in chair space is kept and the hat goes there in the next LateTick.
-            MelonLoader.MelonCoroutines.Start(EndOfFrame());
-        }
-
-        private static System.Collections.IEnumerator EndOfFrame()
-        {
-            var wait = new WaitForEndOfFrame();
-            while (true)
-            {
-                yield return wait;
-                foreach (var kv in _chairs)
-                {
-                    var s = kv.Value;
-                    try
-                    {
-                        if (s.Lv == null || s.Head == null) { s.HasHeadLocal = false; continue; }
-                        s.HeadLocal = s.Lv.transform.InverseTransformPoint(s.Head.position);
-                        s.HasHeadLocal = true;
-                    }
-                    catch (Exception e)
-                    {
-                        Core.Log.Error("[Effects] reading the rider's head failed; the hat waits on the seat: " + e);
-                        s.Head = null; s.HasHeadLocal = false;
-                    }
-                }
-            }
         }
 
         internal static void Reset() => _chairs.Clear();
@@ -131,10 +101,14 @@ namespace Rollin.Tuning
         {
             s.NextScan = Time.time + 0.5f;
             var root = s.Lv.transform;
+            // A hat on the rider's head is not under the chair, so the scan below does not see it. It stays on as long as
+            // its part is still fitted; a part that was replaced or removed takes it back.
+            Transform worn = null, wornHome = null;
+            if (s.Hat != null && s.Head != null && s.Hat.parent == s.Head) { worn = s.Hat; wornHome = s.HatHome; }
             s.PivotL = s.PivotL != null ? s.PivotL : WheelchairType.Find(root, WheelchairType.RimLeft);
             s.PivotR = s.PivotR != null ? s.PivotR : WheelchairType.Find(root, WheelchairType.RimRight);
-            s.SpinL = s.SpinR = s.Hat = s.Red = s.Blue = null;
-            s.HatRenderers.Clear(); s.Flames.Clear(); s.FlameLights.Clear(); s.Thrusters.Clear(); s.Backfires.Clear(); s.Pulses.Clear();
+            s.SpinL = s.SpinR = s.Hat = s.HatHome = s.Red = s.Blue = null;
+            s.HatRenderers.Clear(); s.Thrusters.Clear(); s.Backfires.Clear(); s.Pulses.Clear();
             foreach (var t in root.GetComponentsInChildren<Transform>(true))
             {
                 if (t == null) continue;
@@ -150,13 +124,12 @@ namespace Rollin.Tuning
                     case Models.SpinLeft: s.SpinL = t; break;
                     case Models.SpinRight: s.SpinR = t; break;
                     case Models.Hat:
+                        // The seated avatar hangs under the chair, so the hat on its head shows up here too; it is
+                        // handled after the loop.
+                        if (worn != null && Compat.Interop.Same(t, worn)) break;
                         s.Hat = t;
+                        s.HatHome = t.parent;
                         foreach (var r in t.GetComponentsInChildren<Renderer>(true)) s.HatRenderers.Add(r);
-                        break;
-                    case Models.Flame:
-                        s.Flames.Add(t);
-                        var l = t.GetComponentInChildren<Light>(true);
-                        if (l != null) s.FlameLights.Add(l);
                         break;
                     case Models.Thruster:
                         var a = t.GetComponent<AudioSource>();
@@ -167,6 +140,25 @@ namespace Rollin.Tuning
                     case Models.BlinkBlue: s.Blue = t; break;
                     case Models.Pulse: s.Pulses.Add(t); break;
                 }
+            }
+            if (worn == null) return;
+            if (s.Hat == null && wornHome != null && wornHome.IsChildOf(root))
+            {
+                s.Hat = worn;
+                s.HatHome = wornHome;
+                foreach (var r in worn.GetComponentsInChildren<Renderer>(true)) s.HatRenderers.Add(r);
+                return;
+            }
+            if (wornHome != null)
+            {
+                // Chassis destroys the old part at the end of the frame; the hat goes with it.
+                worn.SetParent(wornHome, true);
+                Core.Log.Msg("[Effects] chair net " + Ids.Of(s.Lv) + ": hat part replaced or removed, the old hat is taken off.");
+            }
+            else
+            {
+                UnityEngine.Object.Destroy(worn.gameObject);
+                Core.Log.Msg("[Effects] chair net " + Ids.Of(s.Lv) + ": hat part gone, the hat is taken off the rider's head.");
             }
         }
 
@@ -187,33 +179,56 @@ namespace Rollin.Tuning
             if (rider == null)
             {
                 // Nobody seated: the hat waits on the cushion.
-                s.Hat.localPosition = new Vector3(0f, 0.5f, -0.08f);
-                s.Hat.localRotation = Quaternion.identity;
+                if (s.Head != null && s.Hat.parent == s.Head) Core.Log.Msg("[Effects] chair net " + Ids.Of(lv) + ": the rider got up, the hat is back on the seat.");
+                HatHome(s);
                 ShowHat(s, true);
                 s.HeadOf = null; s.Head = null;
                 return;
             }
-            if (s.HeadOf == null || !Compat.Interop.Same(s.HeadOf, rider) || s.Head == null)
+            if (s.HeadOf == null || !Compat.Interop.Same(s.HeadOf, rider))
             {
+                HatHome(s);
                 s.HeadOf = rider;
                 s.Head = HeadOf(rider);
-                s.Lift = s.Head != null ? LiftOver(rider, s.Head) : HatLift;
-                Core.Log.Msg("[Effects] chair net " + Ids.Of(lv) + ": hat follows " + rider.name + (s.Head != null
-                    ? " (head bone found, hat " + s.Lift.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " m above it)."
-                    : " - no head bone, the hat stays on the seat."));
+                if (s.Head == null) Core.Log.Warning("[Effects] chair net " + Ids.Of(lv) + ": " + rider.name + " has no head bone - the hat stays on the seat.");
             }
-            if (s.Head == null || !s.HasHeadLocal) return;
-            var up = lv.transform.up;
-            var head = lv.transform.TransformPoint(s.HeadLocal);
-            s.Hat.position = head + up * s.Lift;
-            s.Hat.rotation = Quaternion.LookRotation(lv.transform.forward, up);
+            if (s.Head == null) return;
+            if (s.Hat.parent != s.Head) PutOn(s, rider);
             // The rider's own first-person camera sits inside the head; the hat would fill the view.
             var cam = Camera.main;
-            ShowHat(s, cam == null || Vector3.Distance(cam.transform.position, head) > 0.45f);
+            ShowHat(s, cam == null || Vector3.Distance(cam.transform.position, s.Head.position) > 0.45f);
         }
 
-        /// <summary>From the head bone (the base of the skull) up to where a hat sits.</summary>
+        /// <summary>
+        /// Puts the hat on the rider's head bone, upright over the skull. From then on the bone carries it: every turn,
+        /// nod and lean of the seated pose moves it along.
+        /// </summary>
+        private static void PutOn(State s, Player rider)
+        {
+            var lv = s.Lv;
+            float lift = LiftOver(rider, s.Head, out string by);
+            var up = lv.transform.up;
+            s.Hat.SetParent(s.Head, true); // keeps the size: the head bone is scaled
+            s.Hat.position = s.Head.position + up * lift;
+            s.Hat.rotation = Quaternion.LookRotation(lv.transform.forward, up);
+            Core.Log.Msg("[Effects] chair net " + Ids.Of(lv) + ": hat on " + rider.name + "'s head, "
+                + lift.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " m above the head bone (" + by + ").");
+        }
+
+        /// <summary>Puts the hat back on its part, on the cushion.</summary>
+        private static void HatHome(State s)
+        {
+            if (s.Hat == null || s.HatHome == null || s.Hat.parent == s.HatHome) return;
+            s.Hat.SetParent(s.HatHome, true);
+            s.Hat.localPosition = Models.HatSeat;
+            s.Hat.localRotation = Quaternion.identity;
+        }
+
+        /// <summary>From the head bone (the base of the skull) up to where a hat sits, without hair.</summary>
         private const float HatLift = 0.14f;
+
+        /// <summary>The most a hairstyle or cap lifts the hat.</summary>
+        private const float MaxLift = 0.24f;
 
         private static void ShowHat(State s, bool on)
         {
@@ -222,22 +237,23 @@ namespace Rollin.Tuning
 
         /// <summary>
         /// How far above the head bone the top of the head is: the skull at least, more under a big hairstyle or a cap.
-        /// Taken from the avatar's renderers around the head.
+        /// Taken from the small renderers right at the head (hair, cap); the body and the clothes are larger and left out.
         /// </summary>
-        private static float LiftOver(Player p, Transform head)
+        private static float LiftOver(Player p, Transform head, out string by)
         {
             float top = head.position.y + HatLift;
-            int n = 0;
+            by = "skull";
             foreach (var r in p.Avatar.GetComponentsInChildren<Renderer>(true))
             {
                 if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
                 var b = r.bounds;
-                if (Vector3.Distance(b.center, head.position) > 0.3f) continue;
-                n++;
-                top = Mathf.Max(top, b.max.y);
+                if (b.size.y > 0.45f || Vector3.Distance(b.center, head.position) > 0.25f) continue;
+                if (b.max.y <= top) continue;
+                top = b.max.y;
+                by = r.name;
             }
-            float lift = Mathf.Min(top - head.position.y, 0.4f);
-            if (n == 0) Core.Log.Warning("[Effects] no renderer around " + p.name + "'s head - the hat sits at the skull height.");
+            float lift = top - head.position.y;
+            if (lift > MaxLift) { by += ", capped from " + lift.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); lift = MaxLift; }
             return lift;
         }
 
@@ -261,18 +277,9 @@ namespace Rollin.Tuning
 
         private static void Rocket(State s)
         {
-            if (s.Flames.Count == 0 && s.Thrusters.Count == 0) return;
+            if (s.Thrusters.Count == 0) return;
             bool occupied = s.Lv.IsOccupied;
             float k = occupied ? Mathf.Clamp01(0.2f + 0.8f * Throttle(s)) : 0f;
-            float flicker = 1f + 0.18f * Mathf.Sin(Time.time * 53f) * Mathf.Sin(Time.time * 31f);
-            foreach (var f in s.Flames)
-            {
-                if (f == null) continue;
-                bool show = k > 0.01f;
-                if (f.gameObject.activeSelf != show) f.gameObject.SetActive(show);
-                f.localScale = new Vector3(0.7f + 0.3f * k, (0.25f + 1.2f * k) * flicker, 0.7f + 0.3f * k);
-            }
-            foreach (var l in s.FlameLights) if (l != null) l.intensity = (0.4f + 1.6f * k) * flicker;
             foreach (var a in s.Thrusters)
             {
                 if (a == null) continue;
@@ -338,8 +345,8 @@ namespace Rollin.Tuning
             {
                 if (s.Lv == null) continue;
                 parts.Add("net " + Ids.Of(s.Lv) + " " + s.Speed.ToString("F1") + " km/h"
-                    + (s.SpinL != null ? ", rims" : "") + (s.Hat != null ? ", hat" + (s.Head != null ? " on head" : " on seat") : "")
-                    + (s.Flames.Count > 0 ? ", " + s.Flames.Count + " flame(s)" : "") + (s.Backfires.Count > 0 ? ", " + s.Backfires.Count + " pipe(s)" : "")
+                    + (s.SpinL != null ? ", rims" : "") + (s.Hat != null ? ", hat" + (s.Head != null && s.Hat.parent == s.Head ? " on head" : " on seat") : "")
+                    + (s.Thrusters.Count > 0 ? ", booster" : "") + (s.Backfires.Count > 0 ? ", " + s.Backfires.Count + " pipe(s)" : "")
                     + (s.Red != null ? ", lightbar" : "") + (s.Pulses.Count > 0 ? ", speaker" : ""));
             }
             return "effects: " + (parts.Count == 0 ? "no chairs" : string.Join("; ", parts));

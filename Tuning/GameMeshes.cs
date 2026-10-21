@@ -5,17 +5,17 @@ using System.Text.RegularExpressions;
 namespace Rollin.Tuning
 {
     /// <summary>
-    /// The game's own meshes for the tuning parts: a car wheel, a tailpipe, the police lightbar, the NPC umbrella, a
+    /// The game's own meshes for the tuning parts: a car wheel, the police lightbar, the NPC umbrella, a
     /// garden gnome and other props. Each source is found once (a vehicle prefab, an item's stored model, a Resources
     /// prefab or a loaded object by name) and copied as plain mesh renderers with the game's own materials, so a part
     /// carries no network, physics or item behaviour. A source that cannot be found is logged and builds nothing.
     /// </summary>
     internal static class GameMeshes
     {
-        internal const string RimSport = "rim_sport", RimMuscle = "rim_muscle", Tailpipe = "tailpipe", Lightbar = "lightbar",
+        internal const string RimSport = "rim_sport", RimMuscle = "rim_muscle", Lightbar = "lightbar",
             JerryCan = "jerrycan", Box = "box", Umbrella = "umbrella", Radio = "radio", Gnome = "gnome";
 
-        internal static readonly string[] All = { RimSport, RimMuscle, Tailpipe, Lightbar, JerryCan, Box, Umbrella, Radio, Gnome };
+        internal static readonly string[] All = { RimSport, RimMuscle, Lightbar, JerryCan, Box, Umbrella, Radio, Gnome };
 
         private static readonly Dictionary<string, Transform> _found = new Dictionary<string, Transform>(StringComparer.Ordinal);
         private static readonly HashSet<string> _missing = new HashSet<string>(StringComparer.Ordinal);
@@ -54,7 +54,6 @@ namespace Rollin.Tuning
             {
                 case RimSport: return Vehicle("cheetah", "SportsCarWheel_FL/ModelContainer/Model/Sports car wheel/sports car wheel");
                 case RimMuscle: return Vehicle("hounddog", "MuscleCarWheel_FR/ModelContainer/Model/Muscle Car Wheel/muscle car wheel");
-                case Tailpipe: return Vehicle("bruiser", "SUV/suv/TailPipe");
                 case Lightbar: return Vehicle("bruiser_police", "SUV/Lightbar/lightbar");
                 case JerryCan: return Item("gasoline", "jerry can");
                 case Box: return Named("smallbox", null, "Box");
