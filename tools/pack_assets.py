@@ -17,8 +17,6 @@ MODELS = {
 }
 
 SOUNDS = {
-    "thruster": "kenney-sci-fi-sounds/unpacked/Audio/thrusterFire_000.ogg",
-    "backfire": "kenney-sci-fi-sounds/unpacked/Audio/explosionCrunch_000.ogg",
     "bicycle": "oga-bicycle-horn/bicycle-horn-1.wav",
 }
 

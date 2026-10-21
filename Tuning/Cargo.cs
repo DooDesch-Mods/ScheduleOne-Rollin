@@ -125,28 +125,47 @@ namespace Rollin.Tuning
         /// Whether the local player's look ray hits the box trigger of a chair. The hull's "get in" trigger is wider than
         /// the box and catches a ray from beside the chair before it reaches the box below the seat.
         /// </summary>
-        private static bool Aimed(LandVehicle lv)
+        private static bool Aimed(LandVehicle lv) => AimedBox(lv) != null;
+
+        /// <summary>The box trigger the local player looks at, or null.</summary>
+        private static BoxCollider AimedBox(LandVehicle lv)
         {
             var cam = PlayerSingleton<PlayerCamera>.Instance;
-            if (cam == null || lv == null) return false;
+            if (cam == null || lv == null) return null;
             foreach (var col in lv.GetComponentsInChildren<BoxCollider>(false))
             {
                 if (col.gameObject.name != TriggerName) continue;
                 var eye = cam.transform;
-                return col.Raycast(new Ray(eye.position, eye.forward), out _, 2.5f);
+                return col.Raycast(new Ray(eye.position, eye.forward), out _, 2.5f) ? col : null;
             }
-            return false;
+            return null;
         }
 
-        /// <summary>The hull's prompt says "Open Moving Box" while the player looks at the box through it.</summary>
+        /// <summary>Where the hull's prompt stood before it moved to the box, per hull.</summary>
+        private static readonly Dictionary<IntPtr, Collider> _labelHome = new Dictionary<IntPtr, Collider>();
+
+        /// <summary>
+        /// The hull's prompt says "Open Moving Box" while the player looks at the box through it, and stands at the box
+        /// instead of the seat. Looking away puts it back on the seat.
+        /// </summary>
         [HarmonyPatch(typeof(LandVehicle), "Hovered")]
         private static class HullHover
         {
             [HarmonyPriority(Priority.Last)]
             private static void Postfix(LandVehicle __instance)
             {
-                if (!WheelchairType.Is(__instance) || __instance.intObj == null || Push.LocalPushing || !Aimed(__instance)) return;
-                Hovered(__instance.intObj);
+                var io = __instance.intObj;
+                if (!WheelchairType.Is(__instance) || io == null) return;
+                var box = Push.LocalPushing ? null : AimedBox(__instance);
+                if (box == null)
+                {
+                    if (_labelHome.TryGetValue(io.Pointer, out var home)) { io.displayLocationCollider = home; _labelHome.Remove(io.Pointer); }
+                    return;
+                }
+                if (!_labelHome.ContainsKey(io.Pointer)) _labelHome[io.Pointer] = io.displayLocationCollider;
+                // The label goes to the point of the box nearest the camera (InteractableObject.ShowMessage).
+                io.displayLocationCollider = box;
+                Hovered(io);
             }
         }
 

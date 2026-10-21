@@ -8,8 +8,8 @@ namespace Rollin.Tuning
 {
     /// <summary>
     /// Moves the parts that are more than a model, on every peer for its own copy of each chair: rims turn with the
-    /// wheel pivots, the hat sits on the rider's head, the booster's thruster follows the speed, exhausts pop on
-    /// hard braking, the lightbar flashes and the speakers bounce. Runs late in the frame, after the wheels moved.
+    /// wheel pivots, the hat sits on the rider's head, the tailpipes smoke while someone sits in the chair, the
+    /// lightbar flashes and the speakers bounce. Runs late in the frame, after the wheels moved.
     /// </summary>
     internal static class Effects
     {
@@ -22,14 +22,14 @@ namespace Rollin.Tuning
             /// <summary>The part the hat belongs to; it goes back there when the rider gets up.</summary>
             internal Transform HatHome;
             internal readonly List<Renderer> HatRenderers = new List<Renderer>();
-            internal readonly List<AudioSource> Thrusters = new List<AudioSource>();
-            internal readonly List<Transform> Backfires = new List<Transform>();
+            internal readonly List<ParticleSystem> Smokes = new List<ParticleSystem>();
+            internal readonly List<Wheel> Tyres = new List<Wheel>();
+            internal bool Squealing;
             internal readonly List<Transform> Pulses = new List<Transform>();
             internal Transform Red, Blue;
             internal Vector3 LastPos;
             internal bool HasPos;
             internal float Speed, Accel;
-            internal float NextPop;
             internal Player HeadOf;
             internal Transform Head;
         }
@@ -91,8 +91,8 @@ namespace Rollin.Tuning
 
             Rims(s);
             Hat(s);
-            Rocket(s);
-            Backfire(s);
+            Smoke(s);
+            Squeal(s);
             Lightbar(s);
             Pulse(s);
         }
@@ -108,7 +108,8 @@ namespace Rollin.Tuning
             s.PivotL = s.PivotL != null ? s.PivotL : WheelchairType.Find(root, WheelchairType.RimLeft);
             s.PivotR = s.PivotR != null ? s.PivotR : WheelchairType.Find(root, WheelchairType.RimRight);
             s.SpinL = s.SpinR = s.Hat = s.HatHome = s.Red = s.Blue = null;
-            s.HatRenderers.Clear(); s.Thrusters.Clear(); s.Backfires.Clear(); s.Pulses.Clear();
+            s.HatRenderers.Clear(); s.Smokes.Clear(); s.Pulses.Clear();
+            if (s.Tyres.Count == 0) foreach (var w in root.GetComponentsInChildren<Wheel>(true)) if (w != null && w.DriftAudioEnabled) s.Tyres.Add(w);
             foreach (var t in root.GetComponentsInChildren<Transform>(true))
             {
                 if (t == null) continue;
@@ -131,11 +132,10 @@ namespace Rollin.Tuning
                         s.HatHome = t.parent;
                         foreach (var r in t.GetComponentsInChildren<Renderer>(true)) s.HatRenderers.Add(r);
                         break;
-                    case Models.Thruster:
-                        var a = t.GetComponent<AudioSource>();
-                        if (a != null) s.Thrusters.Add(a);
+                    case Models.SmokePoint:
+                        var fx = SmokeAt(s.Lv, t);
+                        if (fx != null) s.Smokes.Add(fx);
                         break;
-                    case Models.Backfire: s.Backfires.Add(t); break;
                     case Models.BlinkRed: s.Red = t; break;
                     case Models.BlinkBlue: s.Blue = t; break;
                     case Models.Pulse: s.Pulses.Add(t); break;
@@ -267,45 +267,54 @@ namespace Rollin.Tuning
             return anim.GetBoneTransform(HumanBodyBones.Head);
         }
 
-        private static float Throttle(State s)
+        /// <summary>
+        /// The exhaust smoke of the car the chair is built from (its <see cref="VehicleFX"/>), copied onto a tailpipe's
+        /// outlet once. The car's own emitters stay where the hidden car body would have its exhaust.
+        /// </summary>
+        private static ParticleSystem SmokeAt(LandVehicle lv, Transform point)
         {
-            var lv = s.Lv;
-            if (lv.LocalPlayerIsDriver) return Mathf.Clamp01(Mathf.Abs(lv.currentThrottle));
-            // Other peers do not know the driver's keys; speed and acceleration stand in for them.
-            return Mathf.Clamp01(s.Speed / 20f + Mathf.Max(0f, s.Accel) / 15f);
+            var have = point.Find(Models.SmokeFx);
+            if (have != null) return have.GetComponent<ParticleSystem>();
+            var fx = lv.GetComponentInChildren<VehicleFX>(true);
+            var source = fx != null && fx.exhaustFX != null && fx.exhaustFX.Length > 0 ? fx.exhaustFX[0] : null;
+            if (source == null)
+            {
+                Core.Log.Warning("[Effects] chair net " + Ids.Of(lv) + " has no exhaust smoke to copy - the tailpipes stay clean.");
+                point.gameObject.name = Models.SmokePoint + "_none";
+                return null;
+            }
+            var copy = UnityEngine.Object.Instantiate(source.gameObject, point, false);
+            copy.name = Models.SmokeFx;
+            copy.transform.localPosition = Vector3.zero;
+            copy.transform.localRotation = Quaternion.identity;
+            // The chair hides every renderer of the car it is built from, the smoke's among them.
+            foreach (var r in copy.GetComponentsInChildren<Renderer>(true)) r.enabled = true;
+            var ps = copy.GetComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            Core.Log.Msg("[Effects] chair net " + Ids.Of(lv) + ": exhaust smoke '" + source.name + "' on a tailpipe.");
+            return ps;
         }
 
-        private static void Rocket(State s)
+        private static void Smoke(State s)
         {
-            if (s.Thrusters.Count == 0) return;
-            bool occupied = s.Lv.IsOccupied;
-            float k = occupied ? Mathf.Clamp01(0.2f + 0.8f * Throttle(s)) : 0f;
-            foreach (var a in s.Thrusters)
+            if (s.Smokes.Count == 0) return;
+            bool on = s.Lv.IsOccupied;
+            foreach (var ps in s.Smokes)
             {
-                if (a == null) continue;
-                a.volume = occupied ? 0.12f + 0.55f * k : 0f;
-                a.pitch = 0.75f + 0.6f * k;
-                if (occupied && !a.isPlaying) a.Play();
-                else if (!occupied && a.isPlaying) a.Stop();
+                if (ps == null) continue;
+                if (on && !ps.isPlaying) ps.Play(true);
+                else if (!on && ps.isEmitting) ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             }
         }
 
-        private static void Backfire(State s)
+        /// <summary>The game plays the tyre squeal itself (Wheel); this only logs when it starts and stops.</summary>
+        private static void Squeal(State s)
         {
-            if (s.Backfires.Count == 0 || Time.time < s.NextPop) return;
-            if (s.Speed < 5f || s.Accel > -4f) return;
-            var at = s.Backfires[UnityEngine.Random.Range(0, s.Backfires.Count)];
-            if (at == null) return;
-            s.NextPop = Time.time + UnityEngine.Random.Range(0.18f, 0.6f);
-            Sounds.PlayAt("backfire", at.position, 0.7f, UnityEngine.Random.Range(0.9f, 1.35f));
-            var flash = new GameObject("rollin_backfire_flash");
-            flash.transform.position = at.position;
-            var light = flash.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = new Color(1f, 0.5f, 0.15f);
-            light.range = 3f;
-            light.intensity = 6f;
-            UnityEngine.Object.Destroy(flash, 0.08f);
+            bool now = false;
+            foreach (var w in s.Tyres) if (w != null && w.DriftAudioSource != null && w.DriftAudioSource.IsPlaying) { now = true; break; }
+            if (now == s.Squealing) return;
+            s.Squealing = now;
+            Core.Log.Msg("[Effects] chair net " + Ids.Of(s.Lv) + ": tyres " + (now ? "squeal" : "quiet") + " at " + s.Speed.ToString("F1") + " km/h.");
         }
 
         private static void Lightbar(State s)
@@ -338,6 +347,14 @@ namespace Rollin.Tuning
             foreach (var p in s.Pulses) if (p != null) p.localScale = scale;
         }
 
+        private static string SmokeInfo(ParticleSystem ps)
+        {
+            if (ps == null) return "(gone)";
+            var r = ps.GetComponent<ParticleSystemRenderer>();
+            return "(" + (ps.isPlaying ? "playing" : "stopped") + ", " + ps.particleCount + " particles, renderer "
+                + (r == null ? "none" : (r.enabled ? "on" : "off") + ", bounds " + r.bounds.size.ToString("F2")) + ")";
+        }
+
         internal static string Describe()
         {
             var parts = new List<string>();
@@ -346,7 +363,7 @@ namespace Rollin.Tuning
                 if (s.Lv == null) continue;
                 parts.Add("net " + Ids.Of(s.Lv) + " " + s.Speed.ToString("F1") + " km/h"
                     + (s.SpinL != null ? ", rims" : "") + (s.Hat != null ? ", hat" + (s.Head != null && s.Hat.parent == s.Head ? " on head" : " on seat") : "")
-                    + (s.Thrusters.Count > 0 ? ", booster" : "") + (s.Backfires.Count > 0 ? ", " + s.Backfires.Count + " pipe(s)" : "")
+                    + (s.Smokes.Count > 0 ? ", " + s.Smokes.Count + " smoking pipe(s) " + SmokeInfo(s.Smokes[0]) : "")
                     + (s.Red != null ? ", lightbar" : "") + (s.Pulses.Count > 0 ? ", speaker" : ""));
             }
             return "effects: " + (parts.Count == 0 ? "no chairs" : string.Join("; ", parts));
