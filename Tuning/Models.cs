@@ -26,7 +26,7 @@ namespace Rollin.Tuning
         /// <summary>The stock chair wheels a set of rims replaces.</summary>
         private static readonly string[] StockRims = { "Wheel", "Wheel (1)" };
 
-        internal enum Anchor { Bottom, Centre, Back, Front, BottomFront }
+        internal enum Anchor { Bottom, Top, Centre, Back, Front, BottomFront }
 
         // Colours from the game's flat palette (the swatch grid of its prop atlas).
         private static readonly Color DarkSlate = Hex(0x2c3e4f);
@@ -35,6 +35,12 @@ namespace Rollin.Tuning
 
         /// <summary>Where the pole for the lightbar and the umbrella stands: on top of the backrest's top bar.</summary>
         private static readonly Vector3 PoleFoot = new Vector3(0f, 0.95f, -0.4f);
+
+        /// <summary>The underside of the seat sling, where cargo hangs.</summary>
+        private const float SeatUnderside = 0.43f;
+
+        /// <summary>The backrest's two upright tubes (x) and the back of its sling (z).</summary>
+        private const float BackPostX = 0.2f, BackZ = -0.43f;
 
         /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
         private const float LightbarTop = 1.46f;
@@ -59,9 +65,9 @@ namespace Rollin.Tuning
                 }
             }, new TuningStats { EnginePitch = 0.85f });
 
-            // ---- cargo: a moving box from the game's storage, under the seat -----------------------------------------
+            // ---- cargo: a moving box from the game's storage, flush under the seat --------------------------------
             yield return Part("rollin_box", "cargo", "Moving Box", 30, root =>
-                Game(root, GameMeshes.Box, new Vector3(0f, 0.13f, 0.02f), new Vector3(0f, 12f, 0f), 0.2f, Axis.Longest, Anchor.Bottom),
+                Game(root, GameMeshes.Box, new Vector3(0f, SeatUnderside, 0.02f), new Vector3(0f, 12f, 0f), 0.26f, Axis.Longest, Anchor.Top),
                 new TuningStats { Mass = 1.05f });
 
             // ---- booster: a jerry can strapped to the back of the backrest, flame out of the bottom -----------------
@@ -91,8 +97,7 @@ namespace Rollin.Tuning
             yield return Part("rollin_gnome", "mascot", "Garden Gnome", 3, root =>
                 Game(root, GameMeshes.Gnome, new Vector3(0.27f, 0.72f, 0.14f), Vector3.zero, 0.2f, Axis.Height, Anchor.Bottom, upBy: "Hat"), null);
 
-            // ---- hat: a traffic cone or the gnome's hat on the rider's head ------------------------------------------
-            yield return Part("rollin_hat_cone", "hat", "Traffic Cone", 5, root => HatPiece(root, GameMeshes.Cone, null, 0.24f, Axis.Height, 0.07f), null);
+            // ---- hat: the gnome's hat on the rider's head ------------------------------------------------------------
             yield return Part("rollin_hat_gnome", "hat", "Gnome Hat", 420, root => HatPiece(root, GameMeshes.Gnome, "Hat", 0.2f, Axis.Widest, 0.02f), null);
         }
 
@@ -161,19 +166,38 @@ namespace Rollin.Tuning
 
         private static void JerryCanRocket(Transform root)
         {
-            // Upright against the back of the backrest, below the handles; the flame leaves the bottom, tipped 20 degrees
-            // backwards so it clears the frame and stays short of the pusher's feet.
-            var can = Game(root, GameMeshes.JerryCan, new Vector3(0f, 0.5f, -0.43f), Vector3.zero, 0.28f, Axis.Height, Anchor.BottomFront, flatSideBack: true);
+            // Standing on a steel shelf against the back of the backrest, held by two straps to the backrest tubes; the
+            // flame leaves the bottom through the shelf, tipped 20 degrees backwards so it stays short of the pusher's feet.
+            const float floor = 0.5f, height = 0.28f;
+            var can = Game(root, GameMeshes.JerryCan, new Vector3(0f, floor, BackZ), Vector3.zero, height, Axis.Height, Anchor.BottomFront, flatSideBack: true);
             if (can == null) return;
+            var b = GameMeshes.Measure(root, can);
+            float back = b.min.z - 0.006f, mid = (BackZ + back) * 0.5f, depth = BackZ - back;
+            var steel = Flat(Steel, 0.4f, 0.6f);
+            var strap = Flat(DarkSlate, 0.1f, 0f);
+            float span = 2f * BackPostX + 0.02f;
+            Box(root, "shelf", new Vector3(0f, floor - 0.008f, mid), new Vector3(span, 0.016f, depth + 0.02f), steel);
+            foreach (float y in new[] { floor + height * 0.3f, floor + height * 0.75f })
+            {
+                Box(root, "strap", new Vector3(0f, y, back - 0.004f), new Vector3(b.size.x + 0.01f, 0.03f, 0.008f), strap);
+                foreach (float x in new[] { -1f, 1f })
+                {
+                    // From the can's edge round to the tube.
+                    float edge = x * (b.size.x * 0.5f + 0.005f), tube = x * BackPostX;
+                    Box(root, "strap", new Vector3((edge + tube) * 0.5f, y, back - 0.004f), new Vector3(Mathf.Abs(tube - edge) + 0.01f, 0.03f, 0.008f), strap);
+                    Box(root, "strap", new Vector3(tube, y, mid - 0.002f), new Vector3(0.008f, 0.03f, depth + 0.012f), strap);
+                }
+            }
+
             var nozzle = new GameObject("rollin_nozzle").transform;
             nozzle.SetParent(root, false);
-            nozzle.localPosition = new Vector3(0f, 0.5f, -0.5f);
+            nozzle.localPosition = new Vector3(0f, floor - 0.016f, b.center.z);
             nozzle.localRotation = Quaternion.Euler(-20f, 0f, 0f);
-            Box(nozzle, "ring", new Vector3(0f, -0.015f, 0f), new Vector3(0.07f, 0.03f, 0.07f), DarkSlate, false);
+            Box(nozzle, "ring", new Vector3(0f, -0.012f, 0f), new Vector3(0.06f, 0.024f, 0.06f), DarkSlate, false);
 
             var flame = new GameObject(Flame).transform;
             flame.SetParent(nozzle, false);
-            flame.localPosition = new Vector3(0f, -0.03f, 0f);
+            flame.localPosition = new Vector3(0f, -0.024f, 0f);
             flame.localRotation = Quaternion.Euler(180f, 0f, 0f);
             AddCone(flame, "core", 0.022f, 0.16f, new Color(1f, 0.95f, 0.6f));
             AddCone(flame, "outer", 0.04f, 0.28f, new Color(1f, 0.42f, 0.05f));
@@ -310,6 +334,7 @@ namespace Rollin.Tuning
             float k = size / Mathf.Max(0.0001f, measured);
             scaler.localScale = new Vector3(k, k, k);
             Vector3 point = anchor == Anchor.Bottom ? new Vector3(b.center.x, b.min.y, b.center.z)
+                : anchor == Anchor.Top ? new Vector3(b.center.x, b.max.y, b.center.z)
                 : anchor == Anchor.Back ? new Vector3(b.center.x, b.center.y, b.min.z)
                 : anchor == Anchor.Front ? new Vector3(b.center.x, b.center.y, b.max.z)
                 : anchor == Anchor.BottomFront ? new Vector3(b.center.x, b.min.y, b.max.z)

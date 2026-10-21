@@ -13,9 +13,9 @@ namespace Rollin.Tuning
     internal static class GameMeshes
     {
         internal const string RimSport = "rim_sport", RimMuscle = "rim_muscle", Tailpipe = "tailpipe", Lightbar = "lightbar",
-            JerryCan = "jerrycan", Box = "box", Umbrella = "umbrella", Radio = "radio", Gnome = "gnome", Cone = "cone";
+            JerryCan = "jerrycan", Box = "box", Umbrella = "umbrella", Radio = "radio", Gnome = "gnome";
 
-        internal static readonly string[] All = { RimSport, RimMuscle, Tailpipe, Lightbar, JerryCan, Box, Umbrella, Radio, Gnome, Cone };
+        internal static readonly string[] All = { RimSport, RimMuscle, Tailpipe, Lightbar, JerryCan, Box, Umbrella, Radio, Gnome };
 
         private static readonly Dictionary<string, Transform> _found = new Dictionary<string, Transform>(StringComparer.Ordinal);
         private static readonly HashSet<string> _missing = new HashSet<string>(StringComparer.Ordinal);
@@ -61,7 +61,6 @@ namespace Rollin.Tuning
                 case Umbrella: return Resource("equippables/umbrella/Umbrella_TP", "Umbrella (Static)");
                 case Radio: return Named("SM_Item_Radio_01", "SM_Item_Radio_01", null);
                 case Gnome: return Named("gnome", null, "Beard");
-                case Cone: return Named("trafficcone", null, null);
             }
             Core.Log.Error("[GameMeshes] unknown source '" + key + "'.");
             return null;

@@ -240,7 +240,6 @@ namespace Rollin.Debugging
             new[] { "part.booster", "rollin_jerrycan" },
             new[] { "part.exhaust", "rollin_exhaust_twin" },
             new[] { "part.rims", "rollin_rims_sport" },
-            new[] { "part.hat", "rollin_hat_cone" },
             new[] { "part.mascot", "rollin_gnome" },
             new[] { "part.roof", "rollin_umbrella" },
             new[] { "part.lights", "rollin_lightbar" },
