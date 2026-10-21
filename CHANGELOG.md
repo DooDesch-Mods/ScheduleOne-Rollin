@@ -4,6 +4,18 @@ All notable changes to Rollin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.0.4] - 2026-10-21
+
+### Changed
+- The tailpipes smoke like a car exhaust while you sit in the chair.
+- The tyres squeal like a car's when the chair slides.
+
+### Fixed
+- The jerry can rocket made a thruster noise, and the tailpipes popped while you drove.
+- The tailpipes pointed the wrong way round.
+- WASD moved the chair while the tuning menu was open.
+- "Open Moving Box" showed above the seat instead of at the box.
+
 ## [1.0.3] - 2026-10-21
 
 ### Added
