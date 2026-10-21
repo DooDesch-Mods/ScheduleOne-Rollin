@@ -36,14 +36,18 @@ namespace Rollin.Tuning
         /// <summary>Where the pole for the lightbar and the umbrella stands: on top of the backrest's top bar.</summary>
         private static readonly Vector3 PoleFoot = new Vector3(0f, 0.95f, -0.4f);
 
-        /// <summary>The underside of the seat sling, where cargo hangs.</summary>
-        private const float SeatUnderside = 0.43f;
+        /// <summary>The underside of the seat sling, where cargo hangs (the game's wheelchair mesh: sling 0.479 to 0.499).</summary>
+        private const float SeatUnderside = 0.479f;
 
-        /// <summary>The backrest's two upright tubes (x), the back of its sling at seat height (z), and how far it leans back.</summary>
-        private const float BackPostX = 0.2f, BackZ = -0.33f, BackTilt = 12f;
+        /// <summary>
+        /// The backrest's two upright tubes (x), the back of its sling 2 cm above the seat (z), and how far it leans back.
+        /// From the game's wheelchair mesh: the sling's back face runs from z -0.234 at y 0.479 to z -0.285 at y 1.013, and
+        /// the tubes stand in that plane from y 0.46 up.
+        /// </summary>
+        private const float BackPostX = 0.25f, BackZ = -0.236f, BackTilt = 5.5f, BackPostFoot = 0.46f;
 
         /// <summary>The tailpipes: side offset, height, front end, and the cross pipe that joins them in front of that.</summary>
-        private const float PipeX = 0.15f, PipeY = 0.17f, PipeFront = -0.23f, PipeJoin = -0.17f, PipeBore = 0.04f;
+        private const float PipeX = 0.15f, PipeY = 0.17f, PipeFront = -0.23f, PipeJoin = -0.14f, PipeBore = 0.04f;
 
         /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
         private const float LightbarTop = 1.46f;
@@ -197,12 +201,12 @@ namespace Rollin.Tuning
             float back = b.min.z - 0.006f, mid = back * 0.5f, depth = -back;
             var steel = Flat(Steel, 0.4f, 0.6f);
             var strap = Flat(DarkSlate, 0.1f, 0f);
-            float span = 2f * BackPostX + 0.02f;
+            float span = 2f * BackPostX;
             Box(rack, "shelf", new Vector3(0f, -0.008f, mid), new Vector3(span, 0.016f, depth + 0.02f), steel);
             foreach (float x in new[] { -1f, 1f })
             {
-                // From the shelf's back corner down and forward to the tube.
-                var brace = Strut(rack, "brace", new Vector3(x * BackPostX, -0.016f, back + 0.012f), new Vector3(x * BackPostX, -0.12f, 0f), 0.012f, steel);
+                // From the shelf's back corner down and forward to the foot of the tube.
+                var brace = Strut(rack, "brace", new Vector3(x * BackPostX, -0.016f, back + 0.012f), new Vector3(x * BackPostX, BackPostFoot - floor + 0.006f, 0f), 0.012f, steel);
                 if (brace == null) Core.Log.Warning("[Models] the jerry can rack has no brace on side " + x + ".");
             }
             foreach (float y in new[] { height * 0.3f, height * 0.75f })
@@ -210,10 +214,10 @@ namespace Rollin.Tuning
                 Box(rack, "strap", new Vector3(0f, y, back - 0.004f), new Vector3(b.size.x + 0.01f, 0.03f, 0.008f), strap);
                 foreach (float x in new[] { -1f, 1f })
                 {
-                    // From the can's edge round to the tube.
-                    float edge = x * (b.size.x * 0.5f + 0.005f), tube = x * BackPostX;
+                    // From the can's edge round the outside of the tube, which is 2 cm thick.
+                    float edge = x * (b.size.x * 0.5f + 0.005f), tube = x * (BackPostX + 0.014f);
                     Box(rack, "strap", new Vector3((edge + tube) * 0.5f, y, back - 0.004f), new Vector3(Mathf.Abs(tube - edge) + 0.01f, 0.03f, 0.008f), strap);
-                    Box(rack, "strap", new Vector3(tube, y, mid - 0.002f), new Vector3(0.008f, 0.03f, depth + 0.012f), strap);
+                    Box(rack, "strap", new Vector3(tube, y, (back + 0.014f) * 0.5f), new Vector3(0.008f, 0.03f, 0.014f - back), strap);
                 }
             }
 
@@ -423,7 +427,8 @@ namespace Rollin.Tuning
 
             var frame = new GameObject(SeatNeon).transform;
             frame.SetParent(neon, false);
-            const float thick = 0.022f, x = 0.2f, back = -0.28f, front = 0.18f;
+            // Inside the side rails (x 0.24) and between the backrest (z -0.214) and the seat's front edge (z 0.266).
+            const float thick = 0.022f, x = 0.21f, back = -0.195f, front = 0.24f;
             float y = SeatUnderside - thick * 0.5f;
             var mat = r.sharedMaterial;
             if (sides.IndexOf('l') >= 0) Strip(frame, new Vector3(-x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);

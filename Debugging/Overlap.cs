@@ -35,18 +35,20 @@ namespace Rollin.Debugging
         private static readonly Zone[] Zones =
         {
             new Zone("rider head", new Vector3(-0.15f, 1.05f, -0.22f), new Vector3(0.15f, 1.42f, 0.2f)),
-            new Zone("rider torso", new Vector3(-0.2f, 0.5f, -0.32f), new Vector3(0.2f, 1.08f, 0.12f)),
-            new Zone("rider thighs", new Vector3(-0.22f, 0.45f, -0.1f), new Vector3(0.22f, 0.68f, 0.4f)),
+            new Zone("rider torso", new Vector3(-0.2f, 0.5f, -0.214f), new Vector3(0.2f, 1.08f, 0.12f)),
+            new Zone("rider thighs", new Vector3(-0.22f, 0.5f, -0.1f), new Vector3(0.22f, 0.68f, 0.4f)),
             new Zone("rider shins", new Vector3(-0.24f, 0.08f, 0.3f), new Vector3(0.24f, 0.56f, 0.6f)),
-            // The arms run from the shoulders out and back to the elbows, then down to the hands on the push rims.
-            new Zone("rider arm R", new Vector3(0.22f, 0.45f, -0.45f), new Vector3(0.6f, 1.05f, 0.05f)),
-            new Zone("rider arm L", new Vector3(-0.6f, 0.45f, -0.45f), new Vector3(-0.22f, 1.05f, 0.05f)),
+            // The arms run from the shoulders out and back to the elbows, then down past the frame tubes (x 0.26) to the
+            // hands on the push rims.
+            new Zone("rider arm R", new Vector3(0.27f, 0.45f, -0.45f), new Vector3(0.6f, 1.05f, 0.05f)),
+            new Zone("rider arm L", new Vector3(-0.6f, 0.45f, -0.45f), new Vector3(-0.27f, 1.05f, 0.05f)),
             new Zone("pusher body", new Vector3(-0.3f, 0f, -1.18f), new Vector3(0.3f, 1.85f, -0.72f)),
             // Each arm reaches from the shoulder to its handle; the space between the arms stays free.
             new Zone("pusher arm R", new Vector3(0.12f, 0.88f, -0.85f), new Vector3(0.36f, 1.45f, -0.43f)),
             new Zone("pusher arm L", new Vector3(-0.36f, 0.88f, -0.85f), new Vector3(-0.12f, 1.45f, -0.43f)),
-            new Zone("frame backrest", new Vector3(-0.22f, 0.5f, -0.42f), new Vector3(0.22f, 0.95f, -0.3f)),
-            new Zone("frame seat", new Vector3(-0.22f, 0.42f, -0.3f), new Vector3(0.22f, 0.52f, 0.2f)),
+            // The sling's measured faces in the game's wheelchair mesh.
+            new Zone("frame backrest", new Vector3(-0.25f, 0.5f, -0.285f), new Vector3(0.25f, 1.013f, -0.214f)),
+            new Zone("frame seat", new Vector3(-0.25f, 0.479f, -0.234f), new Vector3(0.25f, 0.499f, 0.266f)),
             new Zone("wheel R", new Vector3(0.26f, 0f, -0.56f), new Vector3(0.34f, 0.66f, 0.1f)),
             new Zone("wheel L", new Vector3(-0.34f, 0f, -0.56f), new Vector3(-0.26f, 0.66f, 0.1f)),
             new Zone("caster R", new Vector3(0.24f, 0f, 0.2f), new Vector3(0.32f, 0.2f, 0.41f)),

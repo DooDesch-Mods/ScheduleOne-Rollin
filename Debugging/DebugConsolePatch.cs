@@ -273,6 +273,67 @@ namespace Rollin.Debugging
         }
 
         /// <summary>
+        /// Logs the bare chair's mesh shape in chair space, to fit parts against it: every renderer's bounds, then per
+        /// height band the rearmost and frontmost vertex near the middle (the backrest), and per depth band the lowest
+        /// and highest vertex near the middle (the seat).
+        /// </summary>
+        private static void ChairShape(LandVehicle lv)
+        {
+            var root = lv.transform;
+            var pts = new System.Collections.Generic.List<UnityEngine.Vector3>();
+            foreach (var r in root.GetComponentsInChildren<UnityEngine.Renderer>(true))
+            {
+                bool tuned = false;
+                for (var t = r.transform; t != null && t != root; t = t.parent)
+                    if (t.name.StartsWith("Chassis_Tune_", StringComparison.Ordinal)) { tuned = true; break; }
+                if (tuned) continue;
+                var b = r.bounds;
+                UnityEngine.Mesh mesh = null;
+                var mf = r.GetComponent<UnityEngine.MeshFilter>();
+                if (mf != null) mesh = mf.sharedMesh;
+                var smr = r.TryCast<UnityEngine.SkinnedMeshRenderer>();
+                if (smr != null) mesh = smr.sharedMesh;
+                string info = mesh == null ? "no mesh" : (mesh.isReadable ? mesh.vertexCount + " verts" : "mesh not readable");
+                Core.Log.Msg("[chair] " + r.name + " centre " + V(root.InverseTransformPoint(b.center)) + " size " + V(b.size) + " " + info
+                    + (r.enabled && r.gameObject.activeInHierarchy ? "" : " (hidden)"));
+                if (mesh != null && !mesh.isReadable && smr == null && r.enabled && r.gameObject.activeInHierarchy)
+                {
+                    // Mesh to chair space, so its vertices can be read from the ripped export and placed in chair space.
+                    var m = root.worldToLocalMatrix * r.localToWorldMatrix;
+                    Core.Log.Msg("[chair]   " + r.name + " mesh '" + mesh.name + "' bounds " + V(mesh.bounds.center) + " ext " + V(mesh.bounds.extents)
+                        + " m " + m.m00.ToString("0.0000") + " " + m.m01.ToString("0.0000") + " " + m.m02.ToString("0.0000") + " " + m.m03.ToString("0.0000")
+                        + " | " + m.m10.ToString("0.0000") + " " + m.m11.ToString("0.0000") + " " + m.m12.ToString("0.0000") + " " + m.m13.ToString("0.0000")
+                        + " | " + m.m20.ToString("0.0000") + " " + m.m21.ToString("0.0000") + " " + m.m22.ToString("0.0000") + " " + m.m23.ToString("0.0000"));
+                }
+                if (mesh == null || !mesh.isReadable || smr != null) continue;
+                foreach (var v in mesh.vertices) pts.Add(root.InverseTransformPoint(r.transform.TransformPoint(v)));
+            }
+            if (pts.Count == 0) { Core.Log.Warning("[chair] no readable chair mesh - only bounds above."); Say("tune chair: bounds only"); return; }
+            for (float y = 0.3f; y < 1.0f; y += 0.05f)
+            {
+                float zMin = float.MaxValue, zMax = float.MinValue; int n = 0;
+                foreach (var p in pts)
+                    if (Math.Abs(p.x) < 0.12f && p.y >= y && p.y < y + 0.05f && p.z < -0.1f) { zMin = Math.Min(zMin, p.z); zMax = Math.Max(zMax, p.z); n++; }
+                Core.Log.Msg("[chair] back y " + y.ToString("0.00") + ": " + (n == 0 ? "none" : "z " + zMin.ToString("0.000") + " .. " + zMax.ToString("0.000") + " (" + n + ")"));
+            }
+            for (float z = -0.45f; z < 0.3f; z += 0.05f)
+            {
+                float yMin = float.MaxValue, yMax = float.MinValue; int n = 0;
+                foreach (var p in pts)
+                    if (Math.Abs(p.x) < 0.15f && p.z >= z && p.z < z + 0.05f && p.y > 0.2f && p.y < 0.65f) { yMin = Math.Min(yMin, p.y); yMax = Math.Max(yMax, p.y); n++; }
+                Core.Log.Msg("[chair] seat z " + z.ToString("0.00") + ": " + (n == 0 ? "none" : "y " + yMin.ToString("0.000") + " .. " + yMax.ToString("0.000") + " (" + n + ")"));
+            }
+            for (float y = 0.3f; y < 1.0f; y += 0.05f)
+            {
+                float zMin = float.MaxValue; float xs = 0f; int n = 0;
+                foreach (var p in pts)
+                    if (Math.Abs(p.x) > 0.15f && Math.Abs(p.x) < 0.26f && p.y >= y && p.y < y + 0.05f && p.z < -0.1f) { if (p.z < zMin) { zMin = p.z; xs = p.x; } n++; }
+                Core.Log.Msg("[chair] post y " + y.ToString("0.00") + ": " + (n == 0 ? "none" : "rearmost z " + zMin.ToString("0.000") + " at x " + xs.ToString("0.000")));
+            }
+            Say("tune chair: " + pts.Count + " vertices measured");
+        }
+
+        /// <summary>
         /// Moves one piece of a built part in place, to find its spot without a rebuild; the next tuning change rebuilds the
         /// part from code. Without a name it lists the pieces with their local pose.
         /// </summary>
@@ -339,6 +400,9 @@ namespace Rollin.Debugging
                 }
                 case "where":
                     Where(lv);
+                    return;
+                case "chair":
+                    ChairShape(lv);
                     return;
                 case "overlap":
                     Overlap.Run(lv);
