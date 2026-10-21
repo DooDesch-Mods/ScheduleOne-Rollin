@@ -10,13 +10,17 @@ using UnityEngine.UI;
 namespace Rollin.Tuning
 {
     /// <summary>
-    /// The tuning menu: T while driving a wheelchair. W/S picks a row, A/D changes it, T closes. Every change goes
+    /// The tuning menu: the garage key (R, <c>GarageKey</c> in MelonPreferences) while driving a wheelchair. W/S picks a
+    /// row, A/D changes it, the garage key closes it. Every change goes
     /// through <see cref="Garage.Request"/>, so it reaches the host and every peer sees it. Tuning is free. While the
     /// menu is open the chair ignores the driving keys, which the menu borrows.
     /// </summary>
     internal static class Menu
     {
-        internal const KeyCode Key = KeyCode.T;
+        private static MelonLoader.MelonPreferences_Entry<KeyCode> _key;
+
+        /// <summary>Opens and closes the menu. Not T: the game opens the phone with it.</summary>
+        internal static KeyCode Key => _key != null ? _key.Value : KeyCode.R;
 
         private sealed class Row
         {
@@ -64,7 +68,10 @@ namespace Rollin.Tuning
 
         internal static void Init()
         {
-            ChassisApi.AddKeyHint("rollin.garage", "Tuning", c => c.Driver && WheelchairType.Is(c.Vehicle), Key);
+            var cat = MelonLoader.MelonPreferences.CreateCategory("Rollin", "Rollin");
+            _key = cat.CreateEntry("GarageKey", KeyCode.R, "Garage key", "Opens and closes the tuning menu while you drive a wheelchair.");
+            Core.Log.Msg("[Menu] garage key: " + Key + ".");
+            ChassisApi.AddKeyHint("rollin.garage", "Tuning", c => c.Driver && WheelchairType.Is(c.Vehicle), () => Key);
         }
 
         internal static void Reset()
@@ -80,13 +87,13 @@ namespace Rollin.Tuning
                 if (!Input.GetKeyDown(Key) || GameInput.IsTyping) return;
                 var lv = LocalChair();
                 if (lv == null) return;
-                Open(lv, "T pressed");
+                Open(lv, Key + " pressed");
                 return;
             }
 
             if (!_lv || !_lv.LocalPlayerIsDriver) { Close("left the wheelchair"); return; }
             if (GameInput.IsTyping) return;
-            if (Input.GetKeyDown(Key)) { Close("T pressed"); return; }
+            if (Input.GetKeyDown(Key)) { Close(Key + " pressed"); return; }
             if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) Move(-1);
             if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) Move(1);
             if (Input.GetKeyDown(KeyCode.A)) Cycle(-1);
@@ -195,7 +202,7 @@ namespace Rollin.Tuning
         {
             if (_body == null || _lv == null) return;
             var sb = new StringBuilder();
-            sb.Append("<size=130%><b>ROLLIN GARAGE</b></size>\n<color=#9AA3AD><size=80%>W/S row   A/D change   T close   Free of charge</size></color>\n\n");
+            sb.Append("<size=130%><b>ROLLIN GARAGE</b></size>\n<color=#9AA3AD><size=80%>W/S row   A/D change   " + Key + " close   Free of charge</size></color>\n\n");
             for (int i = 0; i < _rows.Count; i++)
             {
                 var row = _rows[i];

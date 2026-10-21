@@ -16,7 +16,6 @@ namespace Rollin.Tuning
         // Names Effects drives.
         internal const string SpinLeft = "rollin_spin_L", SpinRight = "rollin_spin_R";
         internal const string Hat = "rollin_hat";
-        internal const string Flame = "rollin_fx_flame";
         internal const string Thruster = "rollin_thruster";
         internal const string Backfire = "rollin_backfire";
         internal const string BlinkRed = "rollin_blink_red", BlinkBlue = "rollin_blink_blue";
@@ -33,8 +32,17 @@ namespace Rollin.Tuning
         private static readonly Color Steel = Hex(0x95a5a6);
         private static readonly Color PipeMetal = new Color(0.32f, 0.33f, 0.34f);
 
-        /// <summary>Where the pole for the lightbar and the umbrella stands: on top of the backrest's top bar.</summary>
-        private static readonly Vector3 PoleFoot = new Vector3(0f, 0.95f, -0.4f);
+        /// <summary>
+        /// The push handles: from the top of the backrest tubes they run straight back at this height, x ±0.20, from z -0.27
+        /// to -0.47 (the game's wheelchair mesh), 2.4 cm thick.
+        /// </summary>
+        private const float HandleY = 1.105f, HandleX = 0.2f, HandleFront = -0.27f, HandleBore = 0.024f;
+
+        /// <summary>
+        /// Where the pole for the lightbar and the umbrella stands: on a crossbar clamped between the push handles, just
+        /// behind the bend of the backrest, ahead of the pusher's grip.
+        /// </summary>
+        private static readonly Vector3 PoleFoot = new Vector3(0f, HandleY, -0.3f);
 
         /// <summary>The underside of the seat sling, where cargo hangs (the game's wheelchair mesh: sling 0.479 to 0.499).</summary>
         private const float SeatUnderside = 0.479f;
@@ -47,11 +55,13 @@ namespace Rollin.Tuning
         private const float BackPostX = 0.25f, BackZ = -0.236f, BackTilt = 5.5f, BackPostFoot = 0.46f;
 
         /// <summary>
-        /// The tailpipes hang right under the seat, outside the cargo box (x 0.13) and just below the neon frame
-        /// (y 0.457): side offset, top edge, where the game's tailpipe starts, where the lead pipe in front of it starts,
-        /// the lead pipe's bore, and where the hangers to the seat sit.
+        /// The tailpipes run straight back right under the seat, outside the cargo box (x 0.13), just below the neon frame
+        /// (y 0.457) and under the jerry can's shelf (y 0.484): side offset, top edge, where the pipe starts, where the
+        /// wider tip starts and ends (behind the backrest, short of the pusher's feet), the bores, and where the hangers
+        /// to the seat sit.
         /// </summary>
-        private const float PipeX = 0.17f, PipeTop = 0.454f, PipeFront = -0.2f, PipeLead = -0.02f, PipeBore = 0.04f;
+        private const float PipeX = 0.17f, PipeTop = 0.454f, PipeLead = -0.02f, PipeTipFrom = -0.44f, PipeEnd = -0.54f;
+        private const float PipeBore = 0.04f, PipeTipBore = 0.056f;
         private static readonly float[] PipeHangers = { -0.06f, -0.16f };
 
         /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
@@ -66,7 +76,7 @@ namespace Rollin.Tuning
             yield return Rims("rollin_rims_sport", "Sports Rims", 1200, GameMeshes.RimSport, null);
             yield return Rims("rollin_rims_muscle", "Muscle Rims", 1600, GameMeshes.RimMuscle, new TuningStats { Grip = 1.1f });
 
-            // ---- exhaust: two Bruiser tailpipes out the back, joined by a cross pipe that rises to the seat -----------
+            // ---- exhaust: two straight pipes under the seat, out past the backrest ------------------------------------
             yield return Part("rollin_exhaust_twin", "exhaust", "Twin Tailpipes", 900, TwinExhaust, new TuningStats { EnginePitch = 0.85f });
 
             // ---- cargo: a moving box from the game's storage, flush under the seat --------------------------------
@@ -74,11 +84,11 @@ namespace Rollin.Tuning
                 Game(root, GameMeshes.Box, new Vector3(0f, SeatUnderside, 0.02f), new Vector3(0f, 12f, 0f), 0.26f, Axis.Longest, Anchor.Top),
                 new TuningStats { Mass = 1.05f });
 
-            // ---- booster: a jerry can strapped to the back of the backrest, flame out of the bottom -----------------
+            // ---- booster: a jerry can strapped to the back of the backrest -------------------------------------------
             yield return Part("rollin_jerrycan", "booster", "Jerry Can Rocket", 15000, JerryCanRocket,
                 new TuningStats { Torque = 1.8f, Gearing = 1.8f, EnginePitch = 1.2f });
 
-            // ---- spoiler: a small wing between the push handles -------------------------------------------------------
+            // ---- spoiler: a wing on two struts on the push handles ----------------------------------------------------
             yield return Part("rollin_wing", "spoiler", "Handle Wing", 2500, Wing, new TuningStats { Grip = 1.1f });
 
             // ---- lights: the police lightbar, shrunk onto a pole behind the head -------------------------------------
@@ -110,11 +120,17 @@ namespace Rollin.Tuning
         private static TuningPart Part(string id, string slot, string label, int price, Action<Transform> build, TuningStats stats)
         {
             var part = new TuningPart { Id = id, Slot = slot, Label = label, Price = price, Stats = stats };
+            // Chassis rebuilds the part models whenever the trim paint changes, so the accent pieces take it at build time.
             part.Build = lv =>
             {
-                var root = new GameObject("rollin_part_" + id);
-                build(root.transform);
-                return root;
+                _trim = ChassisApi.GetTuning(lv, "paint2");
+                try
+                {
+                    var root = new GameObject("rollin_part_" + id);
+                    build(root.transform);
+                    return root;
+                }
+                finally { _trim = null; }
             };
             part.Fits[WheelchairType.Code] = new PartFit();
             return part;
@@ -147,6 +163,9 @@ namespace Rollin.Tuning
             scaler.SetParent(holder, false);
             var copy = GameMeshes.Copy(source, scaler);
             if (copy == null) return;
+            // The wheel's own axes: in its car it lies turned, and the box around a turned wheel is too big on every side,
+            // so the squeeze below would shrink the rim under the chair's wheel size.
+            copy.localRotation = Quaternion.identity;
             var b = GameMeshes.Measure(scaler, copy);
             // The axle is the wheel's thinnest side.
             var s = b.size;
@@ -158,12 +177,15 @@ namespace Rollin.Tuning
             copy.localPosition -= b.center;
         }
 
+        /// <summary>Where a hat waits on the cushion while nobody sits in the chair.</summary>
+        internal static readonly Vector3 HatSeat = new Vector3(0f, 0.5f, -0.08f);
+
         /// <summary>A hat that Effects puts on the rider's head; with nobody seated it waits on the cushion.</summary>
         private static void HatPiece(Transform root, string source, string child, float size, Axis axis, float sink)
         {
             var holder = new GameObject(Hat).transform;
             holder.SetParent(root, false);
-            holder.localPosition = new Vector3(0f, 0.5f, -0.08f);
+            holder.localPosition = HatSeat;
             var piece = Game(holder, source, new Vector3(0f, -sink, 0f), Vector3.zero, size, axis, Anchor.Bottom, child: child);
             if (piece == null) Core.Log.Warning("[Models] hat from '" + source + "' did not build.");
         }
@@ -171,33 +193,25 @@ namespace Rollin.Tuning
         private static void TwinExhaust(Transform root)
         {
             var metal = Flat(PipeMetal, 0.55f, 0.5f);
-            var hanger = Flat(DarkSlate, 0.3f, 0.4f);
-            int pipes = 0;
+            var chrome = Flat(Steel, 0.85f, 0.9f);
+            var hanger = Trim(DarkSlate, 0.3f, 0.4f);
+            float tip = PipeTop - PipeTipBore * 0.5f;
             foreach (float side in new[] { 1f, -1f })
             {
-                var pipe = Game(root, GameMeshes.Tailpipe, new Vector3(side * PipeX, PipeTop, PipeFront), Vector3.zero, 0.26f, Axis.Longest, Anchor.Front,
-                    metal, lengthAlongZ: true);
-                if (pipe == null) continue;
-                pipes++;
-                // Lift or drop the game mesh so its top edge sits at PipeTop, whatever its shape.
-                var b = GameMeshes.Measure(root, pipe);
-                pipe.localPosition += new Vector3(0f, PipeTop - b.max.y, 0f);
-                float x = side * PipeX, y = b.center.y + PipeTop - b.max.y;
-                Marker(root, Backfire, new Vector3(x, y, PipeFront - 0.26f));
-                // The lead pipe reaches a little into the tailpipe so no seam shows where the game mesh starts.
-                Tube(root, "lead", new Vector3(x, y, PipeLead), new Vector3(x, y, PipeFront - 0.02f), PipeBore, metal);
-                float top = y + PipeBore * 0.5f;
+                float x = side * PipeX, y = PipeTop - PipeBore * 0.5f;
+                Tube(root, "pipe", new Vector3(x, y, PipeLead), new Vector3(x, y, PipeTipFrom + 0.02f), PipeBore, metal);
+                // The tip is wider and its top is flush with the pipe's, so it reads as a muffler end from behind.
+                Tube(root, "tip", new Vector3(x, tip, PipeTipFrom), new Vector3(x, tip, PipeEnd), PipeTipBore, chrome);
+                Marker(root, Backfire, new Vector3(x, tip, PipeEnd));
                 foreach (float z in PipeHangers)
-                    Box(root, "hanger", new Vector3(x, (top + SeatUnderside) * 0.5f, z), new Vector3(0.012f, SeatUnderside - top + 0.006f, 0.02f), hanger);
+                    Box(root, "hanger", new Vector3(x, (PipeTop + SeatUnderside) * 0.5f, z), new Vector3(0.012f, SeatUnderside - PipeTop + 0.006f, 0.02f), hanger);
             }
-            if (pipes == 0) Core.Log.Warning("[Models] no tailpipe built - the exhaust part shows nothing.");
         }
 
         private static void JerryCanRocket(Transform root)
         {
             // A rack that leans with the backrest: the can stands on a steel shelf flat against the back of the sling, two
-            // straps hold it to the backrest tubes and a brace under each side carries the shelf from the tube. The flame
-            // leaves the bottom through the shelf, tipped backwards so it stays short of the pusher's feet.
+            // straps hold it to the backrest tubes and a brace under each side carries the shelf from the tube.
             const float floor = 0.5f, height = 0.28f;
             var rack = new GameObject("rollin_rack").transform;
             rack.SetParent(root, false);
@@ -207,7 +221,7 @@ namespace Rollin.Tuning
             if (can == null) return;
             var b = GameMeshes.Measure(rack, can);
             float back = b.min.z - 0.006f, mid = back * 0.5f, depth = -back;
-            var steel = Flat(Steel, 0.4f, 0.6f);
+            var steel = Trim(Steel, 0.4f, 0.6f);
             var strap = Flat(DarkSlate, 0.1f, 0f);
             float span = 2f * BackPostX;
             Box(rack, "shelf", new Vector3(0f, -0.008f, mid), new Vector3(span, 0.016f, depth + 0.02f), steel);
@@ -229,45 +243,32 @@ namespace Rollin.Tuning
                 }
             }
 
-            var nozzle = new GameObject("rollin_nozzle").transform;
-            nozzle.SetParent(rack, false);
-            nozzle.localPosition = new Vector3(0f, -0.016f, b.center.z);
-            // 20 degrees back from straight down in chair space; the rack already leans BackTilt of it.
-            nozzle.localRotation = Quaternion.Euler(-(20f - BackTilt), 0f, 0f);
-            Box(nozzle, "ring", new Vector3(0f, -0.012f, 0f), new Vector3(0.06f, 0.024f, 0.06f), DarkSlate, false);
-
-            var flame = new GameObject(Flame).transform;
-            flame.SetParent(nozzle, false);
-            flame.localPosition = new Vector3(0f, -0.024f, 0f);
-            flame.localRotation = Quaternion.Euler(180f, 0f, 0f);
-            AddCone(flame, "core", 0.022f, 0.16f, new Color(1f, 0.95f, 0.6f));
-            AddCone(flame, "outer", 0.04f, 0.28f, new Color(1f, 0.42f, 0.05f));
-            var light = new GameObject("light").AddComponent<Light>();
-            light.transform.SetParent(flame, false);
-            light.transform.localPosition = new Vector3(0f, 0.15f, 0f);
-            light.type = LightType.Point;
-            light.color = new Color(1f, 0.55f, 0.2f);
-            light.range = 2f;
-            light.intensity = 0f;
             var thruster = new GameObject(Thruster);
-            thruster.transform.SetParent(nozzle, false);
+            thruster.transform.SetParent(rack, false);
+            thruster.transform.localPosition = b.center;
             Sounds.AddLoop(thruster, "thruster");
         }
 
         private static void Wing(Transform root)
         {
-            // Between the handles (±0.2 m), narrower than the pusher's grip, on two struts from the backrest's top bar.
-            var mat = Flat(DarkSlate, 0.15f, 0.1f);
+            // Above the handles, as wide as the chair: a strut stands on each handle ahead of the pusher's grip, with a clamp
+            // round the handle, and the blade sits on top just behind the pole of the lightbar or umbrella.
+            const float bladeY = 1.2f, bladeZ = -0.37f, strutZ = -0.35f;
+            var mat = Trim(DarkSlate, 0.15f, 0.1f);
             var wing = new GameObject("rollin_wing").transform;
             wing.SetParent(root, false);
-            wing.localPosition = new Vector3(0f, 1.02f, -0.53f);
+            wing.localPosition = new Vector3(0f, bladeY, bladeZ);
             wing.localRotation = Quaternion.Euler(-8f, 0f, 0f);
-            Box(wing, "blade", Vector3.zero, new Vector3(0.26f, 0.018f, 0.11f), mat);
-            Box(wing, "plate_L", new Vector3(-0.135f, 0.015f, 0f), new Vector3(0.01f, 0.06f, 0.12f), mat);
-            Box(wing, "plate_R", new Vector3(0.135f, 0.015f, 0f), new Vector3(0.01f, 0.06f, 0.12f), mat);
+            Box(wing, "blade", Vector3.zero, new Vector3(0.46f, 0.018f, 0.11f), mat);
+            Box(wing, "plate_L", new Vector3(-0.235f, 0.015f, 0f), new Vector3(0.01f, 0.06f, 0.12f), mat);
+            Box(wing, "plate_R", new Vector3(0.235f, 0.015f, 0f), new Vector3(0.01f, 0.06f, 0.12f), mat);
             var strut = Flat(Steel, 0.4f, 0.6f);
-            Box(root, "strut_L", new Vector3(-0.07f, 0.975f, -0.47f), new Vector3(0.015f, 0.09f, 0.015f), strut);
-            Box(root, "strut_R", new Vector3(0.07f, 0.975f, -0.47f), new Vector3(0.015f, 0.09f, 0.015f), strut);
+            foreach (float x in new[] { -HandleX, HandleX })
+            {
+                float foot = HandleY + HandleBore * 0.5f;
+                Box(root, "strut", new Vector3(x, (foot + bladeY) * 0.5f, strutZ), new Vector3(0.015f, bladeY - foot, 0.015f), strut);
+                Clamp(root, new Vector3(x, HandleY, strutZ), strut);
+            }
         }
 
         private static void Lightbar(Transform root)
@@ -280,9 +281,23 @@ namespace Rollin.Tuning
             Lens(bar, "Blue", BlinkBlue, blueOn, new Color(0f, 0.56f, 1f));
         }
 
-        /// <summary>A steel pole from <see cref="PoleFoot"/> up to <paramref name="top"/>; the overlap check treats it as a mount.</summary>
-        private static void Pole(Transform root, float top) =>
-            Box(root, "pole", new Vector3(PoleFoot.x, (PoleFoot.y + top) * 0.5f, PoleFoot.z), new Vector3(0.022f, top - PoleFoot.y, 0.022f), Flat(Steel, 0.4f, 0.6f));
+        /// <summary>
+        /// A pole from <see cref="PoleFoot"/> up to <paramref name="top"/>, standing on a crossbar that is clamped to both
+        /// push handles; the overlap check treats them as mounts.
+        /// </summary>
+        private static void Pole(Transform root, float top)
+        {
+            var steel = Flat(Steel, 0.4f, 0.6f);
+            var trim = Trim(Steel, 0.4f, 0.6f);
+            Box(root, "crossbar", PoleFoot, new Vector3(2f * HandleX, 0.02f, 0.02f), steel);
+            foreach (float x in new[] { -HandleX, HandleX }) Clamp(root, new Vector3(x, HandleY, PoleFoot.z), steel);
+            Box(root, "pole_foot", PoleFoot + new Vector3(0f, 0.01f, 0f), new Vector3(0.04f, 0.03f, 0.036f), steel);
+            Box(root, "pole", new Vector3(PoleFoot.x, (PoleFoot.y + top) * 0.5f, PoleFoot.z), new Vector3(0.022f, top - PoleFoot.y, 0.022f), trim);
+        }
+
+        /// <summary>A clamp round a push handle at <paramref name="at"/>, a little thicker than the handle.</summary>
+        private static void Clamp(Transform root, Vector3 at, Material mat) =>
+            Box(root, "clamp", at, new Vector3(HandleBore + 0.01f, HandleBore + 0.01f, 0.028f), mat);
 
         /// <summary>
         /// One lens of the copied lightbar becomes a blinker: the lens stays in its off material, an "on" twin in the lit
@@ -462,9 +477,6 @@ namespace Rollin.Tuning
 
         // ---- simple shapes -----------------------------------------------------------------------------------------
 
-        private static Transform Box(Transform parent, string name, Vector3 at, Vector3 size, Color c, bool glow) =>
-            Box(parent, name, at, size, glow ? Glow(c) : Flat(c, 0.15f, 0f));
-
         private static Transform Box(Transform parent, string name, Vector3 at, Vector3 size, Material mat)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -506,44 +518,6 @@ namespace Rollin.Tuning
             return t;
         }
 
-        private static void AddCone(Transform parent, string name, float radius, float length, Color c)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.AddComponent<MeshFilter>().sharedMesh = Cone();
-            go.AddComponent<MeshRenderer>().sharedMaterial = Glow(c);
-            go.transform.localScale = new Vector3(radius, length, radius);
-        }
-
-        private static Mesh _cone;
-
-        /// <summary>A unit cone: base radius 1 at y 0, tip at y 1, open at the base.</summary>
-        private static Mesh Cone()
-        {
-            if (_cone != null) return _cone;
-            const int n = 16;
-            var v = new List<Vector3>();
-            var tris = new List<int>();
-            for (int i = 0; i < n; i++)
-            {
-                float a = i * Mathf.PI * 2f / n;
-                v.Add(new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)));
-            }
-            v.Add(new Vector3(0f, 1f, 0f));
-            for (int i = 0; i < n; i++) { tris.Add(i); tris.Add(n); tris.Add((i + 1) % n); }
-            _cone = new Mesh { name = "rollin_cone" };
-            var vl = new Il2CppSystem.Collections.Generic.List<Vector3>();
-            foreach (var p in v) vl.Add(p);
-            var tl = new Il2CppSystem.Collections.Generic.List<int>();
-            foreach (var t in tris) tl.Add(t);
-            _cone.SetVertices(vl);
-            _cone.SetTriangles(tl, 0);
-            _cone.RecalculateNormals();
-            _cone.RecalculateBounds();
-            _cone.hideFlags |= HideFlags.DontUnloadUnusedAsset;
-            return _cone;
-        }
-
         private static readonly Dictionary<string, Material> _mats = new Dictionary<string, Material>(StringComparer.Ordinal);
 
         /// <summary>The game's prop look: URP Lit, a flat palette colour, little shine.</summary>
@@ -559,18 +533,34 @@ namespace Rollin.Tuning
             return _mats[key] = m;
         }
 
-        /// <summary>Unlit and double sided: flames read as light, not as lit plastic.</summary>
-        internal static Material Glow(Color c)
+        /// <summary>The trim paint (Chassis "paint2", "RRGGBB,finish") of the chair whose parts are being built, or null.</summary>
+        private static string _trim;
+
+        /// <summary>
+        /// An accent material: the chair's trim paint while it has one, else <paramref name="c"/>. Its name does not start
+        /// with "paint", so Chassis leaves it alone and an unpainted chair keeps the parts' own colours.
+        /// </summary>
+        private static Material Trim(Color c, float smoothness, float metallic)
         {
-            string key = "glow" + ColorUtility.ToHtmlStringRGB(c);
-            if (_mats.TryGetValue(key, out var m) && m != null) return m;
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null) { Core.Log.Warning("[Models] URP/Unlit shader not found - glowing parts use the lit shader."); shader = LitShader(); }
-            m = new Material(shader) { name = "rollin_" + key };
-            m.SetColor("_BaseColor", c);
-            if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f);
-            m.hideFlags |= HideFlags.DontUnloadUnusedAsset;
-            return _mats[key] = m;
+            if (string.IsNullOrEmpty(_trim)) return Flat(c, smoothness, metallic);
+            string[] f = _trim.Split(',');
+            string hex = f[0].Trim().TrimStart('#');
+            if (hex.Length != 6 || !ColorUtility.TryParseHtmlString("#" + hex, out var colour))
+            {
+                Core.Log.Warning("[Models] trim paint '" + _trim + "' is not RRGGBB - the parts keep their own colours.");
+                return Flat(c, smoothness, metallic);
+            }
+            string finish = f.Length > 1 ? f[1].Trim().ToLowerInvariant() : TuningFinish.Classic;
+            float m, s;
+            switch (finish)
+            {
+                case TuningFinish.Metallic: m = 0.6f; s = 0.75f; break;
+                case TuningFinish.Matte: m = 0f; s = 0.15f; break;
+                case TuningFinish.Metal: m = 0.9f; s = 0.45f; break;
+                case TuningFinish.Chrome: m = 1f; s = 0.95f; break;
+                default: m = 0.1f; s = 0.6f; break;
+            }
+            return Flat(colour, s, m);
         }
 
         private static Shader LitShader()

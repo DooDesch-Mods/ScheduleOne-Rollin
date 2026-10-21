@@ -23,7 +23,8 @@ namespace Rollin.Chair
                 new SeatProfile
                 {
                     Index = 0,
-                    Root = new Vector3(0f, -0.099f, -0.12f),
+                    // Chassis seats a body upright (not crouched); the root sits low enough that the hips rest on the cushion.
+                    Root = new Vector3(0f, -0.3f, -0.18f),
                     Eyes = new Vector3(0f, 1.34f, 0.1f),
                     Pose = "Sitting",
                     Hands = new HandProfile
@@ -35,8 +36,11 @@ namespace Rollin.Chair
                         GripEnd = new Vector3(0.04f, 0.15f, 0.27f),
                         Recovery = 0.35f,
                         Elbow = new Vector3(0.55f, 0.85f, -0.4f),
-                        LeanStart = new Vector3(0f, 1.15f, 0.18f), LeanStartWeight = 0.35f,
-                        LeanEnd = new Vector3(0f, 1.12f, 0.24f), LeanEndWeight = 0.45f,
+                        // The spine target sits at chest height, a little ahead of the backrest: at rest the rider sits with a
+                        // slight forward lean, at the end of a push stroke a bit more. Without it (weight 0) the body sits
+                        // bolt upright; a target lower down (y 1.15) folds the back over the knees.
+                        LeanStart = new Vector3(0f, 1.35f, 0.05f), LeanStartWeight = 0.3f,
+                        LeanEnd = new Vector3(0f, 1.3f, 0.12f), LeanEndWeight = 0.4f,
                     },
                     Feet = new FootProfile
                     {

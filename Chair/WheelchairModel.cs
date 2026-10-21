@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HarmonyLib;
 using Rollin.Compat;
 
 namespace Rollin.Chair
@@ -13,6 +14,12 @@ namespace Rollin.Chair
     internal static class WheelchairModel
     {
         private static readonly string[] WheelMeshes = { "Wheel", "Wheel (1)", "SmallWheel", "SmallWheel (1)" };
+
+        /// <summary>The frame's own material per renderer, from before vanilla tints it with a car colour.</summary>
+        private static readonly Dictionary<IntPtr, Material> _frameMaterials = new Dictionary<IntPtr, Material>();
+
+        /// <summary>Forgets the frame materials of the world that was left.</summary>
+        internal static void Reset() => _frameMaterials.Clear();
 
         internal static void Build(LandVehicle lv)
         {
@@ -80,8 +87,9 @@ namespace Rollin.Chair
         }
 
         /// <summary>
-        /// The hull's VehicleColor points at the hidden car body. The frame meshes take its place: vanilla's own colour
-        /// (white on a spawned hull) tints the chair texture the way it was, and Chassis paints and measures them.
+        /// The hull's VehicleColor points at the hidden car body. The frame meshes take its place, so Chassis paints and
+        /// measures them. Vanilla's own car colour would tint the frame on every <c>ApplyColor</c>; <see cref="FrameColourPatch"/>
+        /// puts the frame's own material back, so an unpainted chair looks like the prop it was.
         /// </summary>
         private static int PaintTargets(LandVehicle lv, Transform model)
         {
@@ -92,9 +100,50 @@ namespace Rollin.Chair
             {
                 if (Array.IndexOf(WheelMeshes, r.name) >= 0) continue;
                 list.Add(new VehicleColor.BodyMesh { Renderer = r, MaterialIndex = 0 });
+                var mats = r.sharedMaterials;
+                if (mats.Length > 0 && mats[0] != null) _frameMaterials[r.Pointer] = mats[0];
             }
             vc.BodyMeshes = new Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<VehicleColor.BodyMesh>(list.ToArray());
             return list.Count;
+        }
+
+        /// <summary>
+        /// After vanilla painted a wheelchair hull: every frame mesh without Chassis paint gets its own material back.
+        /// </summary>
+        internal static void KeepFrameColour(VehicleColor vc)
+        {
+            if (vc == null || vc.BodyMeshes == null) return;
+            var lv = vc.GetComponentInParent<LandVehicle>();
+            if (!WheelchairType.Is(lv)) return;
+            int put = 0, painted = 0;
+            foreach (var bm in vc.BodyMeshes)
+            {
+                if (bm == null || bm.Renderer == null) continue;
+                if (!_frameMaterials.TryGetValue(bm.Renderer.Pointer, out var own) || own == null) continue;
+                var mats = bm.Renderer.sharedMaterials;
+                if (bm.MaterialIndex < 0 || bm.MaterialIndex >= mats.Length) continue;
+                var now = mats[bm.MaterialIndex];
+                if (now != null && now.name == ChassisPaint) { painted++; continue; }
+                if (Interop.Same(now, own)) continue;
+                mats[bm.MaterialIndex] = own;
+                bm.Renderer.sharedMaterials = mats;
+                put++;
+            }
+            Core.Log.Msg("[Wheelchair] net " + Net.Ids.Of(lv) + ": vanilla tinted the frame, " + put + " mesh(es) back to the chair's own look"
+                + (painted > 0 ? ", " + painted + " keep the Chassis paint." : "."));
+        }
+
+        /// <summary>The name Chassis gives its paint material on a body mesh.</summary>
+        private const string ChassisPaint = "Chassis_Paint";
+
+        [HarmonyPatch(typeof(VehicleColor), nameof(VehicleColor.ApplyColor))]
+        internal static class FrameColourPatch
+        {
+            private static void Postfix(VehicleColor __instance)
+            {
+                try { KeepFrameColour(__instance); }
+                catch (Exception e) { Core.Log.Error("[Wheelchair] putting the frame's own look back after a vanilla repaint failed: " + e); }
+            }
         }
 
         /// <summary>Whether a transform belongs to the chair's own look (not a tuning part).</summary>
