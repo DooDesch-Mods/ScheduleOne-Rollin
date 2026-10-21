@@ -46,8 +46,16 @@ namespace Rollin.Tuning
         /// </summary>
         private const float BackPostX = 0.25f, BackZ = -0.236f, BackTilt = 5.5f, BackPostFoot = 0.46f;
 
-        /// <summary>The tailpipes: side offset, height, front end, and the cross pipe that joins them in front of that.</summary>
-        private const float PipeX = 0.15f, PipeY = 0.17f, PipeFront = -0.23f, PipeJoin = -0.14f, PipeBore = 0.04f;
+        /// <summary>
+        /// The tailpipes: side offset, height, front end, and the cross pipe that joins them in front of that. They run
+        /// inside the chair's two tipping levers, square tubes at x 0.219 to 0.266 and y 0.223 to 0.257 that run back from
+        /// the backrest tubes (z -0.222) to z -0.383 in the game's wheelchair mesh, clear of the wheels outside them.
+        /// </summary>
+        private const float PipeX = 0.16f, PipeY = 0.2f, PipeFront = -0.26f, PipeJoin = -0.15f, PipeBore = 0.04f;
+
+        /// <summary>The tipping lever's middle, and where the exhaust brackets reach over to it.</summary>
+        private const float LeverX = 0.243f, LeverY = 0.24f;
+        private static readonly float[] PipeClamps = { -0.3f, -0.36f };
 
         /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
         private const float LightbarTop = 1.46f;
@@ -173,7 +181,12 @@ namespace Rollin.Tuning
                     metal, lengthAlongZ: true);
                 if (pipe == null) continue;
                 pipes++;
-                Marker(root, Backfire, new Vector3(x, PipeY, -0.5f));
+                Marker(root, Backfire, new Vector3(x, PipeY, PipeFront - 0.26f));
+                // A bracket from the tipping lever beside it down onto the pipe.
+                float lever = Mathf.Sign(x) * LeverX;
+                foreach (float z in PipeClamps)
+                    if (Strut(root, "bracket", new Vector3(lever, LeverY, z), new Vector3(x, PipeY + 0.01f, z), 0.014f, Flat(DarkSlate, 0.3f, 0.4f)) == null)
+                        Core.Log.Warning("[Models] exhaust bracket at z " + z + " has no length.");
                 // Reaches a little into the tailpipe so no seam shows where the game mesh starts.
                 Tube(root, "elbow", new Vector3(x, PipeY, PipeFront - 0.02f), new Vector3(x, PipeY, PipeJoin - PipeBore * 0.5f), PipeBore, metal);
             }
