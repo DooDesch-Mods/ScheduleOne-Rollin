@@ -79,3 +79,5 @@ Sources are listed in [CREDITS.md](CREDITS.md).
 ## License
 
 See [LICENSE.md](LICENSE.md).
+
+This mod is written with help from generative AI tools (Anthropic Claude, OpenAI Codex).
