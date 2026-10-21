@@ -20,7 +20,7 @@
   turn the push rims.
 - A second player can walk up behind an occupied chair and press **Push**. The pusher steers and pushes with their own
   movement keys, and the rider can still roll along. Press Interact again to let go.
-- Press **T** while you sit in a chair for the tuning menu. W and S pick a row, A and D change it. Tuning is free.
+- Press **R** while you sit in a chair for the tuning menu (`GarageKey` in MelonPreferences). W and S pick a row, A and D change it. Tuning is free.
 - Everything is synced in co-op: who sits, who pushes, and every part on every chair. The host keeps each chair's
   tuning with the save.
 - Get up and the chair is a normal prop again. Sit down in it later and its tuning is back.
