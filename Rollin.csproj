@@ -72,11 +72,8 @@
     <Reference Include="Chassis"><HintPath>$(WorkspaceLibPath)/$(Backend)/chassis/Chassis.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
-  <!-- The tuning part models (GLB) and horn sounds, embedded so the mod stays a single file. -->
+  <!-- The horn and effect sounds, embedded so the mod stays a single file. -->
   <ItemGroup>
-    <EmbeddedResource Include="Assets/parts/*.glb">
-      <LogicalName>Rollin.Assets.parts.%(Filename)%(Extension)</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="Assets/sounds/*.pcm">
       <LogicalName>Rollin.Assets.sounds.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
