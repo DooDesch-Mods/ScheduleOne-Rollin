@@ -33,6 +33,7 @@ namespace Rollin.Tuning
             internal Transform Head;
             internal Vector3 HeadLocal;
             internal bool HasHeadLocal;
+            internal float Lift = HatLift;
         }
 
         private static readonly Dictionary<IntPtr, State> _chairs = new Dictionary<IntPtr, State>();
@@ -185,12 +186,15 @@ namespace Rollin.Tuning
             {
                 s.HeadOf = rider;
                 s.Head = HeadOf(rider);
-                Core.Log.Msg("[Effects] chair net " + Ids.Of(lv) + ": hat follows " + rider.name + (s.Head != null ? " (head bone found)." : " - no head bone, the hat stays on the seat."));
+                s.Lift = s.Head != null ? LiftOver(rider, s.Head) : HatLift;
+                Core.Log.Msg("[Effects] chair net " + Ids.Of(lv) + ": hat follows " + rider.name + (s.Head != null
+                    ? " (head bone found, hat " + s.Lift.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " m above it)."
+                    : " - no head bone, the hat stays on the seat."));
             }
             if (s.Head == null || !s.HasHeadLocal) return;
             var up = lv.transform.up;
             var head = lv.transform.TransformPoint(s.HeadLocal);
-            s.Hat.position = head + up * HatLift;
+            s.Hat.position = head + up * s.Lift;
             s.Hat.rotation = Quaternion.LookRotation(lv.transform.forward, up);
             // The rider's own first-person camera sits inside the head; the hat would fill the view.
             var cam = Camera.main;
@@ -203,6 +207,27 @@ namespace Rollin.Tuning
         private static void ShowHat(State s, bool on)
         {
             foreach (var r in s.HatRenderers) if (r != null && r.enabled != on) r.enabled = on;
+        }
+
+        /// <summary>
+        /// How far above the head bone the top of the head is: the skull at least, more under a big hairstyle or a cap.
+        /// Taken from the avatar's renderers around the head.
+        /// </summary>
+        private static float LiftOver(Player p, Transform head)
+        {
+            float top = head.position.y + HatLift;
+            int n = 0;
+            foreach (var r in p.Avatar.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+                var b = r.bounds;
+                if (Vector3.Distance(b.center, head.position) > 0.3f) continue;
+                n++;
+                top = Mathf.Max(top, b.max.y);
+            }
+            float lift = Mathf.Min(top - head.position.y, 0.4f);
+            if (n == 0) Core.Log.Warning("[Effects] no renderer around " + p.name + "'s head - the hat sits at the skull height.");
+            return lift;
         }
 
         private static Transform HeadOf(Player p)
@@ -280,7 +305,7 @@ namespace Rollin.Tuning
         {
             if (t == null) return;
             var l = t.GetComponentInChildren<Light>(true);
-            if (l != null) l.intensity = on ? 2.5f : 0f;
+            if (l != null) l.intensity = on ? 1.2f : 0f;
             // The lens keeps its off material; its lit twin lies on top and is what blinks.
             var twin = t.Find(Models.BlinkOn);
             var r = twin != null ? twin.GetComponent<Renderer>() : null;

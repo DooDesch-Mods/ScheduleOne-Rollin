@@ -69,6 +69,7 @@ namespace Rollin.Debugging
                         Say("tune set <key> <value>        - any tuning key (paint, paint2, neon, horn, part.<slot>)");
                         Say("tune max | clear | show       - the full silly build | stock | what the chair wears");
                         Say("tune overlap                  - every part that enters the rider, the pusher or the frame");
+                        Say("tune nudge <slot> [<name> pos|rot|size <x> [<y> <z>]] - list a built part's pieces, or move one live");
                         Say("parts [slot]                  - every Rollin part with its id");
                         Say("meshes                        - every game mesh the parts copy: where from, size, material");
                         Say("menu [open|close|up|down|left|right] - the T menu without keys");
@@ -272,6 +273,47 @@ namespace Rollin.Debugging
             Say("tune where: " + n + " renderer(s) logged");
         }
 
+        /// <summary>
+        /// Moves one piece of a built part in place, to find its spot without a rebuild; the next tuning change rebuilds the
+        /// part from code. Without a name it lists the pieces with their local pose.
+        /// </summary>
+        private static void Nudge(LandVehicle lv, string[] parts)
+        {
+            if (parts.Length < 4) { Say("tune nudge <slot> [<name> pos|rot|size <x> [<y> <z>]]"); return; }
+            string rootName = "Chassis_Tune_" + parts[3];
+            UnityEngine.Transform root = null;
+            foreach (var t in lv.GetComponentsInChildren<UnityEngine.Transform>(true))
+                if (string.Equals(t.name, rootName, StringComparison.OrdinalIgnoreCase)) { root = t; break; }
+            if (root == null) { Say("tune nudge: no '" + rootName + "' on the chair - put a part in that slot first"); return; }
+            if (parts.Length < 5)
+            {
+                foreach (var t in root.GetComponentsInChildren<UnityEngine.Transform>(true))
+                    if (t != root && t.GetComponent<UnityEngine.Renderer>() == null)
+                        Say("  " + t.name + " pos " + V(t.localPosition) + " rot " + V(t.localEulerAngles) + " size " + V(t.localScale));
+                return;
+            }
+            UnityEngine.Transform piece = null;
+            foreach (var t in root.GetComponentsInChildren<UnityEngine.Transform>(true))
+                if (string.Equals(t.name, parts[4], StringComparison.OrdinalIgnoreCase)) { piece = t; break; }
+            if (piece == null) { Say("tune nudge: no '" + parts[4] + "' under " + rootName); return; }
+            if (parts.Length < 7) { Say("tune nudge " + parts[3] + " " + parts[4] + " pos|rot|size <x> [<y> <z>]"); return; }
+            var f = new float[3];
+            for (int i = 0; i < 3; i++)
+            {
+                string raw = parts.Length > 6 + i ? parts[6 + i] : parts[6];
+                if (!float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out f[i])) { Say("tune nudge: '" + raw + "' is not a number"); return; }
+            }
+            var v = new UnityEngine.Vector3(f[0], f[1], f[2]);
+            switch (parts[5].ToLowerInvariant())
+            {
+                case "pos": piece.localPosition = v; break;
+                case "rot": piece.localEulerAngles = v; break;
+                case "size": piece.localScale = v; break;
+                default: Say("tune nudge: '" + parts[5] + "' is not pos, rot or size"); return;
+            }
+            Say("tune nudge " + piece.name + ": pos " + V(piece.localPosition) + " rot " + V(piece.localEulerAngles) + " size " + V(piece.localScale));
+        }
+
         private static string V(UnityEngine.Vector3 v) =>
             string.Format(CultureInfo.InvariantCulture, "({0:0.00}, {1:0.00}, {2:0.00})", v.x, v.y, v.z);
 
@@ -301,6 +343,9 @@ namespace Rollin.Debugging
                     return;
                 case "overlap":
                     Overlap.Run(lv);
+                    return;
+                case "nudge":
+                    Nudge(lv, parts);
                     return;
                 case "set":
                 {

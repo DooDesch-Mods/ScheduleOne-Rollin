@@ -33,8 +33,14 @@ namespace Rollin.Tuning
         private static readonly Color Steel = Hex(0x95a5a6);
         private static readonly Color PipeMetal = new Color(0.32f, 0.33f, 0.34f);
 
-        /// <summary>Where the pole for the lightbar stands: the middle of the backrest's top bar.</summary>
-        private static readonly Vector3 PoleFoot = new Vector3(0f, 0.93f, -0.4f);
+        /// <summary>Where the pole for the lightbar and the umbrella stands: on top of the backrest's top bar.</summary>
+        private static readonly Vector3 PoleFoot = new Vector3(0f, 0.95f, -0.4f);
+
+        /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
+        private const float LightbarTop = 1.46f;
+
+        /// <summary>The umbrella's shaft starts above the lightbar, so both fit on one pole.</summary>
+        private const float UmbrellaFoot = 1.54f;
 
         internal static IEnumerable<TuningPart> Parts()
         {
@@ -68,19 +74,22 @@ namespace Rollin.Tuning
             // ---- lights: the police lightbar, shrunk onto a pole behind the head -------------------------------------
             yield return Part("rollin_lightbar", "lights", "Police Lightbar", 8000, Lightbar, null);
 
-            // ---- roof: the NPC umbrella, clamped to the backrest and leaning over the rider -------------------------
+            // ---- roof: the NPC umbrella on the pole, over the rider's head -------------------------------------------
             yield return Part("rollin_umbrella", "roof", "Sun Umbrella", 60, root =>
-                Game(root, GameMeshes.Umbrella, new Vector3(0.17f, 0.88f, -0.42f), new Vector3(18f, 0f, -6f), 0.8f, Axis.Widest, Anchor.Bottom),
-                new TuningStats { Mass = 0.9f });
+            {
+                // The pole runs up into the canopy, through the umbrella's own short shaft.
+                Pole(root, UmbrellaFoot + 0.22f);
+                Game(root, GameMeshes.Umbrella, new Vector3(PoleFoot.x, UmbrellaFoot, PoleFoot.z), Vector3.zero, 0.6f, Axis.Widest, Anchor.Bottom);
+            }, new TuningStats { Mass = 0.9f });
 
             // ---- audio: the game's radio on the left armrest ----------------------------------------------------------
             yield return Part("rollin_radio", "audio", "Armrest Radio", 700, root =>
-                Pulsing(Game(root, GameMeshes.Radio, new Vector3(-0.27f, 0.72f, 0.15f), new Vector3(0f, -90f, 0f), 0.16f, Axis.Longest, Anchor.Bottom)),
+                Pulsing(Game(root, GameMeshes.Radio, new Vector3(-0.29f, 0.72f, 0.15f), new Vector3(0f, -90f, 0f), 0.18f, Axis.Longest, Anchor.Bottom)),
                 null);
 
             // ---- mascot: the garden gnome on the right armrest --------------------------------------------------------
             yield return Part("rollin_gnome", "mascot", "Garden Gnome", 3, root =>
-                Game(root, GameMeshes.Gnome, new Vector3(0.27f, 0.72f, 0.14f), Vector3.zero, 0.2f, Axis.Height, Anchor.Bottom), null);
+                Game(root, GameMeshes.Gnome, new Vector3(0.27f, 0.72f, 0.14f), Vector3.zero, 0.2f, Axis.Height, Anchor.Bottom, upBy: "Hat"), null);
 
             // ---- hat: a traffic cone or the gnome's hat on the rider's head ------------------------------------------
             yield return Part("rollin_hat_cone", "hat", "Traffic Cone", 5, root => HatPiece(root, GameMeshes.Cone, null, 0.24f, Axis.Height, 0.07f), null);
@@ -154,7 +163,7 @@ namespace Rollin.Tuning
         {
             // Upright against the back of the backrest, below the handles; the flame leaves the bottom, tipped 20 degrees
             // backwards so it clears the frame and stays short of the pusher's feet.
-            var can = Game(root, GameMeshes.JerryCan, new Vector3(0f, 0.5f, -0.43f), Vector3.zero, 0.28f, Axis.Height, Anchor.BottomFront);
+            var can = Game(root, GameMeshes.JerryCan, new Vector3(0f, 0.5f, -0.43f), Vector3.zero, 0.28f, Axis.Height, Anchor.BottomFront, flatSideBack: true);
             if (can == null) return;
             var nozzle = new GameObject("rollin_nozzle").transform;
             nozzle.SetParent(root, false);
@@ -198,14 +207,17 @@ namespace Rollin.Tuning
 
         private static void Lightbar(Transform root)
         {
-            const float top = 1.46f;
-            Box(root, "pole", new Vector3(PoleFoot.x, (PoleFoot.y + top) * 0.5f, PoleFoot.z), new Vector3(0.022f, top - PoleFoot.y, 0.022f), Flat(Steel, 0.4f, 0.6f));
-            var bar = Game(root, GameMeshes.Lightbar, new Vector3(PoleFoot.x, top, PoleFoot.z), Vector3.zero, 0.38f, Axis.Widest, Anchor.Bottom);
+            Pole(root, LightbarTop);
+            var bar = Game(root, GameMeshes.Lightbar, new Vector3(PoleFoot.x, LightbarTop, PoleFoot.z), Vector3.zero, 0.38f, Axis.Widest, Anchor.Bottom);
             if (bar == null) return;
             GameMeshes.LightbarMaterials(out var redOn, out _, out var blueOn, out _);
             Lens(bar, "Red", BlinkRed, redOn, new Color(1f, 0.13f, 0f));
             Lens(bar, "Blue", BlinkBlue, blueOn, new Color(0f, 0.56f, 1f));
         }
+
+        /// <summary>A steel pole from <see cref="PoleFoot"/> up to <paramref name="top"/>; the overlap check treats it as a mount.</summary>
+        private static void Pole(Transform root, float top) =>
+            Box(root, "pole", new Vector3(PoleFoot.x, (PoleFoot.y + top) * 0.5f, PoleFoot.z), new Vector3(0.022f, top - PoleFoot.y, 0.022f), Flat(Steel, 0.4f, 0.6f));
 
         /// <summary>
         /// One lens of the copied lightbar becomes a blinker: the lens stays in its off material, an "on" twin in the lit
@@ -232,7 +244,7 @@ namespace Rollin.Tuning
             light.transform.localPosition = Vector3.zero;
             light.type = LightType.Point;
             light.color = lightColour;
-            light.range = 4f;
+            light.range = 2.5f;
             light.intensity = 0f;
         }
 
@@ -257,10 +269,11 @@ namespace Rollin.Tuning
         /// A game mesh under <paramref name="parent"/>: the copy turned by <paramref name="euler"/>, scaled uniformly so its
         /// <paramref name="axis"/> measures <paramref name="size"/> metres, and moved so the anchor point of its bounds
         /// (in chair axes, after the turn) sits on a holder at <paramref name="at"/>. <paramref name="lengthAlongZ"/> first
-        /// turns the copy so its longest side runs along Z.
+        /// turns the copy so its longest side runs along Z; <paramref name="upBy"/> first turns it so that child is on top;
+        /// <paramref name="flatSideBack"/> turns its broad side to face backwards.
         /// </summary>
         private static Transform Game(Transform parent, string source, Vector3 at, Vector3 euler, float size, Axis axis, Anchor anchor,
-            Material fallback = null, bool lengthAlongZ = false, string child = null)
+            Material fallback = null, bool lengthAlongZ = false, string child = null, string upBy = null, bool flatSideBack = false)
         {
             var holder = new GameObject("rollin_" + source).transform;
             holder.SetParent(parent, false);
@@ -277,6 +290,12 @@ namespace Rollin.Tuning
                 keep.SetParent(scaler, true);
                 UnityEngine.Object.DestroyImmediate(copy.gameObject);
                 copy = keep;
+            }
+            if (upBy != null) Upright(scaler, copy, upBy);
+            if (flatSideBack)
+            {
+                var s1 = GameMeshes.Measure(scaler, copy).size;
+                if (s1.z > s1.x) copy.localRotation = Quaternion.Euler(0f, 90f, 0f) * copy.localRotation;
             }
             if (lengthAlongZ)
             {
@@ -297,6 +316,17 @@ namespace Rollin.Tuning
                 : b.center;
             copy.localPosition -= point;
             return holder;
+        }
+
+        /// <summary>Turns <paramref name="copy"/> so the line from its middle to its child <paramref name="top"/> points up.</summary>
+        private static void Upright(Transform space, Transform copy, string top)
+        {
+            Transform t = null;
+            foreach (var x in copy.GetComponentsInChildren<Transform>(true)) if (x.name == top) { t = x; break; }
+            if (t == null) { Core.Log.Warning("[Models] " + copy.name + " has no '" + top + "' to stand it up by - it keeps the source's lie."); return; }
+            var up = GameMeshes.Measure(space, t).center - GameMeshes.Measure(space, copy).center;
+            if (up.sqrMagnitude < 1e-8f) { Core.Log.Warning("[Models] " + copy.name + "'s '" + top + "' sits in its middle - it keeps the source's lie."); return; }
+            copy.localRotation = Quaternion.FromToRotation(up, Vector3.up) * copy.localRotation;
         }
 
         // ---- simple shapes -----------------------------------------------------------------------------------------

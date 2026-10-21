@@ -75,6 +75,8 @@ namespace Rollin.Debugging
                 {
                     // Each pair once, and only across slots: one part's own pieces may touch.
                     if (string.CompareOrdinal(p.Path, q.Path) >= 0 || Slot(p.Path) == Slot(q.Path)) continue;
+                    // A pole is a mount: the lightbar and the umbrella share it on purpose.
+                    if (p.Path.EndsWith("/pole", StringComparison.Ordinal) || q.Path.EndsWith("/pole", StringComparison.Ordinal)) continue;
                     float depth = Depth(p.Box, q.Box);
                     if (depth <= Touch) continue;
                     Core.Log.Warning("[overlap] " + p.Path + " enters " + q.Path + " by " + Cm(depth));
@@ -83,6 +85,8 @@ namespace Rollin.Debugging
                 foreach (var l in limbs)
                 {
                     if (p.Path.Contains(Models.Hat)) break;
+                    // The rider's hands grip the rims.
+                    if ((p.Path.Contains(Models.SpinLeft) || p.Path.Contains(Models.SpinRight)) && l.Name.Contains("Hand")) continue;
                     var inner = p.Box;
                     inner.Expand(-2f * Touch);
                     if (!inner.Contains(l.Point)) continue;
@@ -129,9 +133,28 @@ namespace Rollin.Debugging
                 }
                 if (!tuned) continue;
                 if (!LocalBounds(r, out var local)) { Core.Log.Warning("[overlap] " + path + " has no mesh bounds, skipped."); continue; }
-                list.Add(new Part { Path = path, Box = ToChair(root, r.transform, local) });
+                list.Add(new Part { Path = path, Box = Spinner(r.transform, out var spin) ? Wheel(root, spin, r.transform, local) : ToChair(root, r.transform, local) });
             }
             return list;
+        }
+
+        /// <summary>The rim holder above <paramref name="t"/>, which turns with the wheel.</summary>
+        private static bool Spinner(Transform t, out Transform spin)
+        {
+            for (spin = t; spin != null; spin = spin.parent)
+                if (spin.name == Models.SpinLeft || spin.name == Models.SpinRight) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// A rim measured in its own turning holder and moved to the holder's spot: a box around a turned wheel would
+        /// grow with the turn, the wheel itself does not.
+        /// </summary>
+        private static Bounds Wheel(Transform root, Transform spin, Transform t, Bounds local)
+        {
+            var box = ToChair(spin, t, local);
+            box.center += root.InverseTransformPoint(spin.position);
+            return box;
         }
 
         private static bool LocalBounds(Renderer r, out Bounds b)
@@ -160,18 +183,22 @@ namespace Rollin.Debugging
             return outBox;
         }
 
-        /// <summary>Bones of every player within 2.5 m of the chair, five points along each bone to its parent bone.</summary>
+        /// <summary>
+        /// Bones of every player whose body is within 2.5 m of the chair, five points along each bone to its parent bone.
+        /// The distance is taken from the bones: a seated player's root stays where they sat down.
+        /// </summary>
         private static List<Limb> Limbs(Transform root)
         {
             var list = new List<Limb>();
-            foreach (var p in UnityEngine.Object.FindObjectsOfType<Player>())
+            foreach (var p in Player.PlayerList)
             {
                 if (p == null) continue;
-                float dist = Vector3.Distance(p.transform.position, root.position);
-                if (dist > 2.5f) { Core.Log.Msg("[overlap] " + p.PlayerName + " is " + dist.ToString("F1", CultureInfo.InvariantCulture) + " m away, not measured."); continue; }
                 var seen = new HashSet<IntPtr>();
-                var renderers = p.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-                int before = list.Count;
+                var mine = new List<Limb>();
+                float nearest = float.MaxValue;
+                // The avatar is not under the player object in every state; take it from the player.
+                var body = p.Avatar != null ? p.Avatar.transform : p.transform;
+                var renderers = body.GetComponentsInChildren<SkinnedMeshRenderer>(true);
                 foreach (var smr in renderers)
                 {
                     var bones = smr.bones;
@@ -181,16 +208,23 @@ namespace Rollin.Debugging
                     foreach (var b in bones)
                     {
                         if (b == null || !seen.Add(b.Pointer)) continue;
+                        nearest = Mathf.Min(nearest, Vector3.Distance(b.position, root.position));
                         var parent = b.parent;
                         bool limb = parent != null && set.Contains(parent.Pointer);
                         for (int i = 0; i < (limb ? 5 : 1); i++)
                         {
                             var w = limb ? Vector3.Lerp(b.position, parent.position, i / 5f) : b.position;
-                            list.Add(new Limb { Name = p.PlayerName + "'s " + b.name, Point = root.InverseTransformPoint(w) });
+                            mine.Add(new Limb { Name = p.PlayerName + "'s " + b.name, Point = root.InverseTransformPoint(w) });
                         }
                     }
                 }
-                Core.Log.Msg("[overlap] " + p.PlayerName + ": " + renderers.Length + " skinned renderer(s), " + (list.Count - before) + " limb point(s).");
+                if (nearest > 2.5f)
+                {
+                    Core.Log.Msg("[overlap] " + p.PlayerName + " is " + (nearest == float.MaxValue ? "without bones" : nearest.ToString("F1", CultureInfo.InvariantCulture) + " m away") + ", not measured.");
+                    continue;
+                }
+                list.AddRange(mine);
+                Core.Log.Msg("[overlap] " + p.PlayerName + ": " + renderers.Length + " skinned renderer(s), " + mine.Count + " limb point(s).");
             }
             return list;
         }

@@ -61,7 +61,7 @@ namespace Rollin.Tuning
                 case Umbrella: return Resource("equippables/umbrella/Umbrella_TP", "Umbrella (Static)");
                 case Radio: return Named("SM_Item_Radio_01", "SM_Item_Radio_01", null);
                 case Gnome: return Named("gnome", null, "Beard");
-                case Cone: return Named("trafficcone", "Cylinder_4", null);
+                case Cone: return Named("trafficcone", null, null);
             }
             Core.Log.Error("[GameMeshes] unknown source '" + key + "'.");
             return null;
@@ -165,15 +165,19 @@ namespace Rollin.Tuning
         // ---- copies ----------------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// A copy of <paramref name="key"/>'s visible meshes under <paramref name="parent"/>: the source's own rotation and
-        /// scale are kept, its position is not. Null when the game has no such mesh.
+        /// A copy of <paramref name="key"/>'s visible meshes under <paramref name="parent"/>, turned and scaled as the
+        /// source lies in the world, at the parent's origin. Null when the game has no such mesh.
         /// </summary>
         internal static Transform Copy(string key, Transform parent, Material fallback = null)
         {
             var src = Source(key);
             if (src == null) return null;
             var copy = CopyNode(src, parent, fallback);
+            // The source's lie in the world (a prefab's root sits at the origin unturned): a gnome placed on a rock group
+            // or an umbrella under a hand bone gets its upright pose from its parents, not from itself.
             copy.localPosition = Vector3.zero;
+            copy.localRotation = src.rotation;
+            copy.localScale = src.lossyScale;
             return copy;
         }
 
