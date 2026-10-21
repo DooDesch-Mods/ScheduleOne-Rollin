@@ -59,6 +59,7 @@ namespace Rollin
             Net.Ids.Reset();
             Chair.Push.Reset();
             Chair.PropSwap.Reset();
+            Chair.WheelchairModel.Reset();
             Tuning.Garage.Reset();
             Tuning.Effects.Reset();
             Tuning.GameMeshes.Reset();
