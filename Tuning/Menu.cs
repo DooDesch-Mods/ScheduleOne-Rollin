@@ -25,7 +25,7 @@ namespace Rollin.Tuning
             internal readonly List<KeyValuePair<string, string>> Options = new List<KeyValuePair<string, string>>();
         }
 
-        private static readonly string[] PartSlots = { "spoiler", "booster", "exhaust", "rims", "hat", "mascot", "roof", "lights", "audio", "cargo", "decal" };
+        private static readonly string[] PartSlots = { "spoiler", "booster", "exhaust", "rims", "hat", "mascot", "roof", "lights", "audio", "cargo" };
         private static readonly string[] StageSlots = { "engine", "brakes", "suspension", "tyres", "steering", "weight" };
 
         private static readonly (string Label, string Value)[] Paints =

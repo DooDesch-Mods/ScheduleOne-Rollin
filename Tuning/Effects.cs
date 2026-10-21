@@ -281,7 +281,9 @@ namespace Rollin.Tuning
             if (t == null) return;
             var l = t.GetComponentInChildren<Light>(true);
             if (l != null) l.intensity = on ? 2.5f : 0f;
-            var r = t.GetComponentInChildren<Renderer>(true);
+            // The lens keeps its off material; its lit twin lies on top and is what blinks.
+            var twin = t.Find(Models.BlinkOn);
+            var r = twin != null ? twin.GetComponent<Renderer>() : null;
             if (r != null && r.enabled != on) r.enabled = on;
         }
 

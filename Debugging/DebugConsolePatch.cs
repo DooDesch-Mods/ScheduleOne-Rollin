@@ -68,7 +68,9 @@ namespace Rollin.Debugging
                         Say("tune <slot> <part id|label|n> - put a part on your chair (or the nearest); 'none' takes it off");
                         Say("tune set <key> <value>        - any tuning key (paint, paint2, neon, horn, part.<slot>)");
                         Say("tune max | clear | show       - the full silly build | stock | what the chair wears");
+                        Say("tune overlap                  - every part that enters the rider, the pusher or the frame");
                         Say("parts [slot]                  - every Rollin part with its id");
+                        Say("meshes                        - every game mesh the parts copy: where from, size, material");
                         Say("menu [open|close|up|down|left|right] - the T menu without keys");
                         Say("(drive, camera, first person and exit: chassis drive | chassis cam | chassis view | chassis exit)");
                         break;
@@ -172,6 +174,10 @@ namespace Rollin.Debugging
                         Tune(parts);
                         break;
 
+                    case "meshes":
+                        foreach (var key in GameMeshes.All) Say(GameMeshes.Describe(key));
+                        break;
+
                     case "parts":
                     {
                         string slot = parts.Length > 2 ? parts[2] : null;
@@ -225,21 +231,20 @@ namespace Rollin.Debugging
         /// <summary>The full build for screenshots: one of everything, loud colours.</summary>
         private static readonly string[][] MaxBuild =
         {
-            new[] { "paint", "FF3EA5,metallic" },
-            new[] { "paint2", "FFC423,chrome" },
+            new[] { "paint", "2980B9,metallic" },
+            new[] { "paint2", "BDC3C7,chrome" },
             new[] { "neon", "2EF2FF,fblr" },
             new[] { "horn", "rollin_cucaracha" },
-            new[] { "part.spoiler", "rollin_spoiler_gt" },
-            new[] { "part.booster", "rollin_rocket_twin" },
+            new[] { "part.spoiler", "rollin_wing" },
+            new[] { "part.booster", "rollin_jerrycan" },
             new[] { "part.exhaust", "rollin_exhaust_twin" },
-            new[] { "part.rims", "rollin_rims_racing" },
-            new[] { "part.hat", "rollin_hat_crown" },
-            new[] { "part.mascot", "rollin_duck" },
-            new[] { "part.roof", "rollin_flag" },
+            new[] { "part.rims", "rollin_rims_sport" },
+            new[] { "part.hat", "rollin_hat_cone" },
+            new[] { "part.mascot", "rollin_gnome" },
+            new[] { "part.roof", "rollin_umbrella" },
             new[] { "part.lights", "rollin_lightbar" },
-            new[] { "part.audio", "rollin_subwoofer" },
-            new[] { "part.cargo", "rollin_soda" },
-            new[] { "part.decal", "rollin_flames" },
+            new[] { "part.audio", "rollin_radio" },
+            new[] { "part.cargo", "rollin_box" },
             new[] { "part.engine", "rollin_engine_2" },
             new[] { "part.tyres", "rollin_tyres_grip" },
         };
@@ -293,6 +298,9 @@ namespace Rollin.Debugging
                 }
                 case "where":
                     Where(lv);
+                    return;
+                case "overlap":
+                    Overlap.Run(lv);
                     return;
                 case "set":
                 {

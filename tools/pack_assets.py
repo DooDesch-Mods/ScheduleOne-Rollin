@@ -13,29 +13,7 @@ import subprocess
 import sys
 
 MODELS = {
-    # Rollin name: path under the downloads folder
-    "spoiler_gt": "kenney-car-kit/unpacked/Models/GLB format/debris-spoiler-a.glb",
-    "spoiler_drag": "kenney-car-kit/unpacked/Models/GLB format/debris-spoiler-b.glb",
-    "wheel_racing": "kenney-car-kit/unpacked/Models/GLB format/wheel-racing.glb",
-    "wheel_truck": "kenney-car-kit/unpacked/Models/GLB format/wheel-truck.glb",
-    "wheel_dark": "kenney-car-kit/unpacked/Models/GLB format/wheel-dark.glb",
-    "cone": "kenney-car-kit/unpacked/Models/GLB format/cone.glb",
-    "rocket_base": "kenney-space-kit/unpacked/Models/GLTF format/rocket_baseA.glb",
-    "rocket_fuel": "kenney-space-kit/unpacked/Models/GLTF format/rocket_fuelA.glb",
-    "rocket_top": "kenney-space-kit/unpacked/Models/GLTF format/rocket_topA.glb",
-    "pipe": "kenney-space-kit/unpacked/Models/GLTF format/pipe_straight.glb",
-    "dish": "kenney-space-kit/unpacked/Models/GLTF format/satelliteDish.glb",
-    "flag": "kenney-racing-kit/unpacked/Models/GLTF format/flagCheckers.glb",
-    "radio": "kenney-furniture-kit/unpacked/Models/GLTF format/radio.glb",
-    "basket": "kenney-mini-market/unpacked/Models/GLB format/shopping-basket.glb",
-    "soda": "kenney-food-kit/unpacked/Models/GLB format/soda.glb",
-    "flame": "polypizza-flame-decal/flame-decal.glb",
-    "speaker": "polypizza-speaker/speaker.glb",
-    "duck": "polypizza-rubber-duck/rubber-duck.glb",
-    "crown": "polypizza-crown/crown.glb",
-    "fedora": "polypizza-hat-stylised/hat-stylised.glb",
-    "umbrella": "polypizza-closed-umbrella/closed-umbrella.glb",
-    "tailpipe": "polypizza-suppressor/suppressor.glb",
+    # Rollin name: path under the downloads folder. The tuning parts copy the game's own meshes, so none are packed.
 }
 
 SOUNDS = {

@@ -60,6 +60,7 @@ namespace Rollin
             Chair.PropSwap.Reset();
             Tuning.Garage.Reset();
             Tuning.Effects.Reset();
+            Tuning.GameMeshes.Reset();
             Tuning.Menu.Reset();
         }
 
