@@ -10,6 +10,7 @@ project adheres to Semantic Versioning.
 - Sit in the wheelchairs around Hyland Point and roll them with W, A, S and D. A second player can take the handles and
   push.
 - Press T in a wheelchair for the Rollin Garage: paint, trim paint, neon, six horns and stat upgrades, free of charge.
-- Bolt on spoilers, rocket boosters, exhausts that backfire, racing or monster rims, a police lightbar and a subwoofer.
-- Put a crown, fedora or traffic cone on your head and a rubber duck on the armrest.
+- Strap a jerry can rocket to the backrest, bolt on car rims, twin tailpipes that backfire, a police lightbar and an
+  armrest radio.
+- Park a garden gnome between your legs or wear its hat. Neon glows from under the seat.
 - In co-op the rider, the pusher and every part sync, and the host saves each chair's tuning.
