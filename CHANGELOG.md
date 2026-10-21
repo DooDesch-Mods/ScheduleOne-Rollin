@@ -4,6 +4,11 @@ All notable changes to Rollin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.0.1] - 2026-10-21
+
+### Changed
+- New icon and header: the stock wheelchair next to the same chair with full tuning. The mod itself is unchanged.
+
 ## [1.0.0] - 2026-10-21
 
 ### Added
