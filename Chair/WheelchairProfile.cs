@@ -24,7 +24,7 @@ namespace Rollin.Chair
                 {
                     Index = 0,
                     // Chassis seats a body upright (not crouched); the root sits low enough that the hips rest on the cushion.
-                    Root = new Vector3(0f, -0.3f, -0.18f),
+                    Root = new Vector3(0f, -0.3f, -0.1f),
                     Eyes = new Vector3(0f, 1.34f, 0.1f),
                     Pose = "Sitting",
                     Hands = new HandProfile

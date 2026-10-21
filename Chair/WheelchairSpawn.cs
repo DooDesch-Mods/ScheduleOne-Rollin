@@ -22,6 +22,7 @@ namespace Rollin.Chair
             var go = UnityEngine.Object.Instantiate(prefab.gameObject, position, rotation);
             go.name = "RollinWheelchair";
             go.SetActive(true);
+            Tuning.Cargo.Setup(go.GetComponent<LandVehicle>());
             InstanceFinder.ServerManager.Spawn(go, null);
             var lv = go.GetComponent<LandVehicle>();
             Core.Log.Msg("[Wheelchair] spawned at " + position.ToString("F2") + " yaw " + rotation.eulerAngles.y.ToString("F0") + " as net " + Ids.Of(lv) + " (" + why + ").");
@@ -48,6 +49,10 @@ namespace Rollin.Chair
                 catch (Exception e) { Core.Log.Error("[Wheelchair] building the look failed: " + e); }
                 try { Push.AddHandles(__instance); }
                 catch (Exception e) { Core.Log.Error("[Wheelchair] adding the push handles failed: " + e); }
+                try { Tuning.Cargo.Setup(__instance); }
+                catch (Exception e) { Core.Log.Error("[Wheelchair] setting up the Moving Box storage failed: " + e); }
+                try { Tuning.StockTrim.Apply(__instance); }
+                catch (Exception e) { Core.Log.Error("[Wheelchair] painting the stock trim failed: " + e); }
                 // Start registers every vehicle for weather updates (wet tyre grip). The environment walks a snapshot of
                 // that list over half a second, so a wheelchair despawned in that window throws a NullReferenceException
                 // there. The wheelchair keeps its own grip and leaves the list right away.

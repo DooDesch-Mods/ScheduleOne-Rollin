@@ -73,6 +73,7 @@ namespace Rollin.Debugging
                         Say("parts [slot]                  - every Rollin part with its id");
                         Say("meshes                        - every game mesh the parts copy: where from, size, material");
                         Say("menu [open|close|up|down|left|right] - the T menu without keys");
+                        Say("box [add <id> [n]|aim|hover|press] - the Moving Box storage of the nearest chair");
                         Say("(drive, camera, first person and exit: chassis drive | chassis cam | chassis view | chassis exit)");
                         break;
 
@@ -175,6 +176,33 @@ namespace Rollin.Debugging
                         Tune(parts);
                         break;
 
+                    case "frame":
+                    {
+                        // frame: every mesh of the nearest chair's look, with its bounds in chair axes.
+                        var lp = Player.Local;
+                        var lv = lp != null ? Nearest(lp.transform.position, false) : null;
+                        var model = lv != null ? WheelchairType.Find(lv.transform, WheelchairType.FrameName) : null;
+                        if (model == null) { Say("frame: no chair near you"); break; }
+                        foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+                        {
+                            var b = GameMeshes.Measure(lv.transform, r.transform);
+                            Say(r.name + (r.enabled ? "" : " (off)") + " centre " + b.center.ToString("F2") + " size " + b.size.ToString("F2") + " parent " + r.transform.parent.name);
+                        }
+                        break;
+                    }
+
+                    case "box":
+                        Box(parts);
+                        break;
+
+                    case "pipe":
+                    {
+                        if (parts.Length < 5) { Say("pipe <x> <y> <z>: turn of the tailpipe, now " + Models.PipeTurn); break; }
+                        Models.PipeTurn = new Vector3(float.Parse(parts[2], CultureInfo.InvariantCulture), float.Parse(parts[3], CultureInfo.InvariantCulture), float.Parse(parts[4], CultureInfo.InvariantCulture));
+                        Say("pipe turn " + Models.PipeTurn + " - refit the exhaust to see it");
+                        break;
+                    }
+
                     case "meshes":
                         foreach (var key in GameMeshes.All) Say(GameMeshes.Describe(key));
                         break;
@@ -270,6 +298,74 @@ namespace Rollin.Debugging
                 n++;
             }
             Say("tune where: " + n + " renderer(s) logged");
+        }
+
+        /// <summary>
+        /// box: the nearest chair's Moving Box slots. box add &lt;item id&gt; [qty]: put items in (host). box aim: stand beside
+        /// the chair and look at the box, then report what the game's interaction raycast hovers. box press: run the
+        /// hovered object's interaction as the E key does.
+        /// </summary>
+        private static void Box(string[] parts)
+        {
+            var lp = Player.Local;
+            var lv = lp != null ? Nearest(lp.transform.position, false) : null;
+            if (lv == null || lv.Storage == null) { Say("box: no chair with a trunk near you"); return; }
+            var st = lv.Storage;
+            string op = parts.Length > 2 ? parts[2].ToLowerInvariant() : "show";
+            switch (op)
+            {
+                case "add":
+                {
+                    if (parts.Length < 4) { Say("box add <item id> [qty]"); return; }
+                    if (!Il2CppScheduleOne.Registry.ItemExists(parts[3])) { Say("box add: no item '" + parts[3] + "'"); return; }
+                    int qty = parts.Length > 4 && int.TryParse(parts[4], out int q) ? q : 1;
+                    var inst = Il2CppScheduleOne.Registry.GetItem(parts[3]).GetDefaultInstance(qty);
+                    st.InsertItem(inst, true);
+                    Say("box add: " + qty + " x " + parts[3] + " into net " + Ids.Of(lv) + ", now " + st.ItemCount + " item(s)");
+                    return;
+                }
+                case "aim":
+                {
+                    var trigger = WheelchairType.Find(lv.transform, Cargo.TriggerName);
+                    if (trigger == null) { Say("box aim: net " + Ids.Of(lv) + " has no Moving Box fitted"); return; }
+                    Vector3 side = lv.transform.right;
+                    PlayerSingleton<PlayerMovement>.Instance.Teleport(lv.transform.position + side * 1.3f + Vector3.up * 0.1f, true);
+                    PlayerSingleton<PlayerCamera>.Instance.LookAt(trigger.position, 0f);
+                    Say("box aim: looking at the box of net " + Ids.Of(lv) + "; 'rollin box hover' reports the raycast");
+                    return;
+                }
+                case "hover":
+                {
+                    var im = Singleton<InteractionManager>.Instance;
+                    var h = im != null ? im.HoveredInteractableObject : null;
+                    Say("box hover: " + (h == null ? "nothing" : h.name + " '" + h.message + "' state " + h.interactionState));
+                    return;
+                }
+                case "press":
+                {
+                    var im = Singleton<InteractionManager>.Instance;
+                    var h = im != null ? im.HoveredValidInteractableObject : null;
+                    if (h == null) { Say("box press: nothing valid hovered"); return; }
+                    h.StartInteract();
+                    Say("box press: " + h.name + ", menu " + (st.IsOpened ? "open" : "closed"));
+                    return;
+                }
+                case "close":
+                    Singleton<Il2CppScheduleOne.UI.StorageMenu>.Instance.CloseMenu();
+                    Say("box close: menu " + (st.IsOpened ? "still open" : "closed"));
+                    return;
+                default:
+                {
+                    var slots = st.ItemSlots;
+                    for (int i = 0; i < slots.Count; i++)
+                    {
+                        var it = slots[i].ItemInstance;
+                        Say("slot " + i + ": " + (it == null ? "empty" : it.Definition.ID + " x" + slots[i].Quantity));
+                    }
+                    Say("box: net " + Ids.Of(lv) + " '" + st.StorageEntityName + "', " + slots.Count + " slot(s), " + st.ItemCount + " item(s), access " + st.AccessSettings);
+                    return;
+                }
+            }
         }
 
         /// <summary>

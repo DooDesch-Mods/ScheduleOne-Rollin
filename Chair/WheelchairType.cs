@@ -39,6 +39,16 @@ namespace Rollin.Chair
         internal const float CasterRadius = 0.1f;
         private const float Suspension = 0.04f;
 
+        /// <summary>
+        /// Where the hull's "get in" trigger starts: just under the seat sling. Below it the Moving Box has its own
+        /// "open" trigger (<see cref="Tuning.Cargo"/>).
+        /// </summary>
+        internal const float EnterFloor = 0.47f;
+        private const float EnterTop = 1.05f;
+
+        /// <summary>The layer of the hull's "get in" trigger, which the interaction raycast hits.</summary>
+        internal static int InteractionLayer { get; private set; }
+
         private static GameObject _prefab;
 
         internal static LandVehicle Prefab => _prefab != null ? _prefab.GetComponent<LandVehicle>() : null;
@@ -125,6 +135,8 @@ namespace Rollin.Chair
             }
             foreach (var l in root.GetComponentsInChildren<Light>(true)) l.enabled = false;
             foreach (var a in root.GetComponentsInChildren<AudioSource>(true)) { a.enabled = false; a.playOnAwake = false; }
+            // The trunk stays (the Moving Box uses it), but its items must not appear where the car's boot was.
+            foreach (var v in root.GetComponentsInChildren<Il2CppScheduleOne.Storage.StorageEntityVisualizer>(true)) v.enabled = false;
 
             // One box for the chair body, above the wheels' ground contact.
             var body = new GameObject("RollinBody");
@@ -137,14 +149,15 @@ namespace Rollin.Chair
             if (intObj != null)
             {
                 intObj.SetParent(root, false);
-                intObj.localPosition = new Vector3(0f, 0.55f, 0f);
+                intObj.localPosition = new Vector3(0f, (EnterFloor + EnterTop) * 0.5f, 0f);
                 intObj.localRotation = Quaternion.identity;
                 foreach (var bc in intObj.GetComponentsInChildren<BoxCollider>(true))
                 {
                     bc.enabled = true; bc.isTrigger = true;
                     bc.center = Vector3.zero;
-                    bc.size = new Vector3(0.7f, 0.9f, 0.9f);
+                    bc.size = new Vector3(0.7f, EnterTop - EnterFloor, 0.9f);
                     bc.transform.localScale = Vector3.one;
+                    InteractionLayer = bc.gameObject.layer;
                 }
             }
             else Core.Log.Warning("[Wheelchair] the donor has no IntObj - nobody can get in.");
