@@ -233,10 +233,27 @@ namespace Rollin.Chair
         internal static void OnUnswap(string key, Vector3 pos, float yaw)
         {
             if (!_props.TryGetValue(key, out var p)) { Core.Log.Warning("[Swap] unswap for unknown prop " + key + "."); return; }
+            Retire(p.Vehicle, key);
             p.Vehicle = -1;
             p.EmptySince = -1f;
             Show(p, pos, Quaternion.Euler(0f, yaw, 0f));
             Core.Log.Msg("[Swap] prop " + key + " is back at " + pos.ToString("F2") + " yaw " + yaw.ToString("F0") + ".");
+        }
+
+        /// <summary>
+        /// The hull stands where the prop comes back until FishNet removes it. Its colliders would overlap the prop's
+        /// rigidbody, and physics pushes the two apart at speed; so the hull stops colliding before the prop is shown.
+        /// </summary>
+        private static void Retire(int vehicle, string key)
+        {
+            if (vehicle < 0) return;
+            var lv = Ids.Find<LandVehicle>(vehicle);
+            if (lv == null) { Core.Log.Msg("[Swap] vehicle net " + vehicle + " of prop " + key + " is already gone here."); return; }
+            int n = 0;
+            foreach (var c in lv.GetComponentsInChildren<Collider>(true)) if (c != null && c.enabled) { c.enabled = false; n++; }
+            var rb = lv.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true;
+            Core.Log.Msg("[Swap] vehicle net " + vehicle + " stops colliding before prop " + key + " comes back (" + n + " collider(s) off).");
         }
 
         private static void Hide(Prop p)
