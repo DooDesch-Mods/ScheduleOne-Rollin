@@ -56,6 +56,7 @@ namespace Rollin
         private static void ResetWorld()
         {
             Net.Sync.Reset();
+            Net.Ids.Reset();
             Chair.Push.Reset();
             Chair.PropSwap.Reset();
             Tuning.Garage.Reset();
