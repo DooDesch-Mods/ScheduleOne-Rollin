@@ -1,0 +1,90 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared release hardening: strip Release debug info + assembly identity, cuts AV false positives (see Workspace/build/Hardening.props). -->
+  <Import Project="$(MSBuildThisFileDirectory)../Workspace/build/Hardening.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/Hardening.props')" />
+  <Import Project="$(MSBuildThisFileDirectory)Workspace/build/Hardening.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/Hardening.props')" />
+  <!-- CI checks out the shared Workspace repo as a SUBFOLDER of this project; compile only this mod's own source. -->
+  <ItemGroup>
+    <Compile Remove="Workspace/**/*.cs" />
+  </ItemGroup>
+  <!-- Generates DooDesch.ModVersion.Current from the version property. MUST come after the Workspace Remove. -->
+  <Import Project="$(MSBuildThisFileDirectory)../Workspace/build/ModVersion.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/ModVersion.props')" />
+  <Import Project="$(MSBuildThisFileDirectory)Workspace/build/ModVersion.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/ModVersion.props')" />
+  <!-- Where a build is allowed to install: the test copy by default. See Workspace/build/Deploy.props. -->
+  <Import Project="$(MSBuildThisFileDirectory)../Workspace/build/Deploy.props" Condition="Exists('$(MSBuildThisFileDirectory)../Workspace/build/Deploy.props')" />
+  <Import Project="$(MSBuildThisFileDirectory)Workspace/build/Deploy.props" Condition="Exists('$(MSBuildThisFileDirectory)Workspace/build/Deploy.props')" />
+  <!--
+    Rollin - MelonLoader IL2CPP mod for Schedule I.
+    The placed wheelchairs become rideable and absurdly tunable, built on the Chassis vehicle framework.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Rollin</RootNamespace>
+    <AssemblyName>Rollin</AssemblyName>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <!-- NEVER bumped. The release version comes from the tag (Workspace/docs/RELEASE-PROCESS.md, "Versioning"). -->
+    <Version Condition="'$(Version)' == ''">0.0.0-dev</Version>
+    <NoWarn>$(NoWarn);MSB3277;MSB3245</NoWarn>
+    <WorkspaceLibPath Condition="'$(WorkspaceLibPath)' == ''">$(MSBuildThisFileDirectory)../Workspace/lib</WorkspaceLibPath>
+    <Backend>il2cpp</Backend>
+    <DefineConstants>$(DefineConstants);IL2CPP</DefineConstants>
+    <GameManagedPath>$(WorkspaceLibPath)/$(Backend)/game</GameManagedPath>
+    <MelonLoaderPath>$(WorkspaceLibPath)/$(Backend)/melonloader</MelonLoaderPath>
+    <!-- Chassis from source when a checkout exists; pass -p:ChassisProject=... to build against a Chassis worktree. -->
+    <ChassisProject Condition="'$(ChassisProject)' == ''">$(MSBuildThisFileDirectory)../Chassis/Chassis.csproj</ChassisProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MelonLoader"><HintPath>$(MelonLoaderPath)/MelonLoader.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(MelonLoaderPath)/0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Newtonsoft.Json"><HintPath>$(MelonLoaderPath)/Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(MelonLoaderPath)/Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(GameManagedPath)/Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppSystem"><HintPath>$(GameManagedPath)/Il2CppSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(GameManagedPath)/Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppScheduleOne.Core"><HintPath>$(GameManagedPath)/Il2CppScheduleOne.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppFishNet.Runtime"><HintPath>$(GameManagedPath)/Il2CppFishNet.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(GameManagedPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(GameManagedPath)/UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.VehiclesModule"><HintPath>$(GameManagedPath)/UnityEngine.VehiclesModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(GameManagedPath)/UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AudioModule"><HintPath>$(GameManagedPath)/UnityEngine.AudioModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(GameManagedPath)/UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>$(GameManagedPath)/UnityEngine.ParticleSystemModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(GameManagedPath)/UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.InputSystem"><HintPath>$(GameManagedPath)/Unity.InputSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(GameManagedPath)/Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(GameManagedPath)/UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(GameManagedPath)/UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- Chassis seats the rider, puts the hands on the rims and the pusher's hands on the handles, and carries the tuning.
+       A Chassis checkout builds it; otherwise the DLL from the shared lib folder (CI). -->
+  <ItemGroup Condition="Exists('$(ChassisProject)')">
+    <!-- Built for the reference only: Chassis deploys from its own build, never as a copy inside Rollin's. -->
+    <ProjectReference Include="$(ChassisProject)" Private="false"
+                      AdditionalProperties="ModsDirectory=$(MSBuildThisFileDirectory)obj/chassis-ref/Mods;UserLibsDirectory=$(MSBuildThisFileDirectory)obj/chassis-ref/UserLibs;PluginsDirectory=$(MSBuildThisFileDirectory)obj/chassis-ref/Plugins;DeployVerifyDisable=true;S1PairInstallRoot=" />
+  </ItemGroup>
+  <ItemGroup Condition="!Exists('$(ChassisProject)')">
+    <Reference Include="Chassis"><HintPath>$(WorkspaceLibPath)/$(Backend)/chassis/Chassis.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- The tuning part models (GLB) and horn sounds, embedded so the mod stays a single file. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/parts/*.glb">
+      <LogicalName>Rollin.Assets.parts.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets/sounds/*.pcm">
+      <LogicalName>Rollin.Assets.sounds.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Exec Condition="Exists('$(ModsDirectory)')"
+          Command="cmd /c if exist &quot;$(ModsDirectory)&quot; copy /Y &quot;$(TargetPath)&quot; &quot;$(ModsDirectory)&quot;"
+          ContinueOnError="true" />
+  </Target>
+</Project>

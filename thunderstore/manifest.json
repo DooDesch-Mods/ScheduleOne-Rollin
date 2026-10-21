@@ -1,0 +1,13 @@
+{
+  "name": "Rollin",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/DooDesch-Mods/ScheduleOne-Rollin",
+  "description": "Sit in the wheelchairs of Schedule I, roll them, let a friend push, and tune them with rockets, spoilers, neon, hats and absurd horns. Needs Chassis.",
+  "dependencies": [
+    "LavaGang-MelonLoader-0.7.3",
+    "DooDesch-Chassis-1.3.0"
+  ],
+  "contributors": [
+    "DooDesch"
+  ]
+}
