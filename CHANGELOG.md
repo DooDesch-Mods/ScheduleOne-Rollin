@@ -4,6 +4,19 @@ All notable changes to Rollin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.0.2] - 2026-10-21
+
+### Fixed
+- You sit on the cushion now, instead of hovering above it and leaning over your knees.
+- Getting out no longer throws the chair across the map.
+- The chair keeps its own colour when you sit down.
+- Spoiler, roof and light pole, exhaust, muscle rims and hat sit where they belong. Trim paint colours the parts.
+- Less lag while you sit in a chair.
+
+### Changed
+- The tuning menu opens with R, because T also opened the phone. Change the key with `GarageKey`.
+- The jerry can booster has no flame.
+
 ## [1.0.1] - 2026-10-21
 
 ### Changed
