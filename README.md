@@ -2,8 +2,8 @@
 
 > 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rollin](https://support.doodesch.de/rollin).
 
-> Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then bolt a rocket to
-> the back, put a crown on, and honk La Cucaracha at the police.
+> Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
+> rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Game](https://img.shields.io/badge/game-Schedule%20I-purple)
@@ -25,11 +25,11 @@
   tuning with the save.
 - Get up and the chair is a normal prop again. Sit down in it later and its tuning is back.
 
-![A tuned wheelchair with crown, rockets, flag and lightbar](docs/img/tuned.jpg)
+![A tuned wheelchair from behind: jerry can rocket, twin tailpipes, umbrella and lightbar](docs/img/tuned.jpg)
 
-![Rolling up the skatepark bowl](docs/img/driving.jpg)
+![Rolling across a basketball court](docs/img/driving.jpg)
 
-![A friend pushing the chair in co-op](docs/img/push.jpg)
+![A second build in hot pink with a gnome hat and muscle rims](docs/img/build2.jpg)
 
 ## Tuning
 
@@ -40,17 +40,16 @@
 | Paint, Trim Paint | Hot Pink, Toxic Lime, Gold, Chrome, Matte Black, Candy Red, Baby Blue, Royal Purple, Hospital Green |
 | Neon | Pink, Cyan, Green, Red, Purple, White |
 | Horn | Clown Horn, Rubber Duck, Freight Train, Charge!, La Cucaracha, Bicycle Horn |
-| Spoiler | GT Wing, Drag Wing |
-| Booster | Rocket Booster, Twin Boosters (flames, light and thrust sound) |
-| Exhaust | Twin Tailpipes, Truck Stacks (they backfire when you brake hard) |
-| Rims | Racing Rims, Monster Truck Tyres, Murdered-Out Rims |
-| Hat | Royal Crown, M'lady Fedora, Traffic Cone (it sits on the rider's head) |
-| Mascot | Rubber Duck, Mega Duck |
-| Roof | Emergency Umbrella, Satellite Dish, Checkered Flag |
+| Spoiler | Handle Wing |
+| Booster | Jerry Can Rocket (flame, light and thrust sound) |
+| Exhaust | Twin Tailpipes (they backfire when you brake hard) |
+| Rims | Sports Rims, Muscle Rims |
+| Hat | Gnome Hat (it sits on the rider's head) |
+| Mascot | Garden Gnome (it sits between the rider's legs) |
+| Roof | Sun Umbrella |
 | Lights | Police Lightbar |
-| Audio | Subwoofer, Boombox |
-| Cargo | Shopping Basket, Cup Holder Big Gulp |
-| Decal | Flame Job |
+| Audio | Armrest Radio |
+| Cargo | Moving Box |
 | Engine | Caffeine Drip, Lawnmower Swap, Jet Turbine, Illegal Rocket |
 | Brakes | Heel Drag Pads, Anchor Brakes |
 | Suspension | Slammed, Monster Lift |
@@ -78,7 +77,7 @@ tuning parts. The Debug build adds the console command `rollin` (`rollin help` l
 
 ## Credits
 
-All models and sounds are CC0, by Kenney, Quaternius, iPoly3D, CreativeTrio, hat_my_guy, Pichuliru and AntumDeluge.
+The tuning parts are built from the game's own models. The sounds are CC0, by Kenney and AntumDeluge.
 Sources are listed in [CREDITS.md](CREDITS.md).
 
 ## License
