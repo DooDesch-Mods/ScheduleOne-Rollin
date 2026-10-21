@@ -88,14 +88,14 @@ namespace Rollin.Tuning
                 Game(root, GameMeshes.Umbrella, new Vector3(PoleFoot.x, UmbrellaFoot, PoleFoot.z), Vector3.zero, 0.6f, Axis.Widest, Anchor.Bottom);
             }, new TuningStats { Mass = 0.9f });
 
-            // ---- audio: the game's radio on the left armrest ----------------------------------------------------------
+            // ---- audio: the game's radio lengthwise on the left armrest, speaker facing out -------------------------
             yield return Part("rollin_radio", "audio", "Armrest Radio", 700, root =>
-                Pulsing(Game(root, GameMeshes.Radio, new Vector3(-0.29f, 0.72f, 0.15f), new Vector3(0f, -90f, 0f), 0.18f, Axis.Longest, Anchor.Bottom)),
+                Pulsing(Game(root, GameMeshes.Radio, new Vector3(-0.29f, 0.72f, 0.15f), new Vector3(0f, -90f, 0f), 0.18f, Axis.Longest, Anchor.Bottom, ownAxes: true)),
                 null);
 
-            // ---- mascot: the garden gnome on the right armrest --------------------------------------------------------
+            // ---- mascot: the garden gnome on the seat between the rider's thighs, looking ahead ----------------------
             yield return Part("rollin_gnome", "mascot", "Garden Gnome", 3, root =>
-                Game(root, GameMeshes.Gnome, new Vector3(0.27f, 0.72f, 0.14f), Vector3.zero, 0.2f, Axis.Height, Anchor.Bottom, upBy: "Hat"), null);
+                Game(root, GameMeshes.Gnome, new Vector3(0f, 0.52f, 0.16f), Vector3.zero, 0.24f, Axis.Height, Anchor.Bottom, upBy: "Hat", faceBy: "Beard"), null);
 
             // ---- hat: the gnome's hat on the rider's head ------------------------------------------------------------
             yield return Part("rollin_hat_gnome", "hat", "Gnome Hat", 420, root => HatPiece(root, GameMeshes.Gnome, "Hat", 0.2f, Axis.Widest, 0.02f), null);
@@ -293,11 +293,13 @@ namespace Rollin.Tuning
         /// A game mesh under <paramref name="parent"/>: the copy turned by <paramref name="euler"/>, scaled uniformly so its
         /// <paramref name="axis"/> measures <paramref name="size"/> metres, and moved so the anchor point of its bounds
         /// (in chair axes, after the turn) sits on a holder at <paramref name="at"/>. <paramref name="lengthAlongZ"/> first
-        /// turns the copy so its longest side runs along Z; <paramref name="upBy"/> first turns it so that child is on top;
-        /// <paramref name="flatSideBack"/> turns its broad side to face backwards.
+        /// turns the copy so its longest side runs along Z; <paramref name="upBy"/> first turns it so that child is on top and
+        /// <paramref name="faceBy"/> so that child faces forward; <paramref name="flatSideBack"/> turns its broad side to face
+        /// backwards. <paramref name="ownAxes"/> drops the lie the source has in its scene and starts from the mesh's own axes.
         /// </summary>
         private static Transform Game(Transform parent, string source, Vector3 at, Vector3 euler, float size, Axis axis, Anchor anchor,
-            Material fallback = null, bool lengthAlongZ = false, string child = null, string upBy = null, bool flatSideBack = false)
+            Material fallback = null, bool lengthAlongZ = false, string child = null, string upBy = null, bool flatSideBack = false,
+            string faceBy = null, bool ownAxes = false)
         {
             var holder = new GameObject("rollin_" + source).transform;
             holder.SetParent(parent, false);
@@ -315,7 +317,9 @@ namespace Rollin.Tuning
                 UnityEngine.Object.DestroyImmediate(copy.gameObject);
                 copy = keep;
             }
+            if (ownAxes) copy.localRotation = Quaternion.identity;
             if (upBy != null) Upright(scaler, copy, upBy);
+            if (faceBy != null) Facing(scaler, copy, faceBy);
             if (flatSideBack)
             {
                 var s1 = GameMeshes.Measure(scaler, copy).size;
@@ -352,6 +356,66 @@ namespace Rollin.Tuning
             var up = GameMeshes.Measure(space, t).center - GameMeshes.Measure(space, copy).center;
             if (up.sqrMagnitude < 1e-8f) { Core.Log.Warning("[Models] " + copy.name + "'s '" + top + "' sits in its middle - it keeps the source's lie."); return; }
             copy.localRotation = Quaternion.FromToRotation(up, Vector3.up) * copy.localRotation;
+        }
+
+        /// <summary>Turns <paramref name="copy"/> about the vertical so its child <paramref name="front"/> faces forward (+Z).</summary>
+        private static void Facing(Transform space, Transform copy, string front)
+        {
+            Transform t = null;
+            foreach (var x in copy.GetComponentsInChildren<Transform>(true)) if (x.name == front) { t = x; break; }
+            if (t == null) { Core.Log.Warning("[Models] " + copy.name + " has no '" + front + "' to face it forward by - it keeps its heading."); return; }
+            var ahead = GameMeshes.Measure(space, t).center - GameMeshes.Measure(space, copy).center;
+            ahead.y = 0f;
+            if (ahead.sqrMagnitude < 1e-8f) { Core.Log.Warning("[Models] " + copy.name + "'s '" + front + "' sits in its middle - it keeps its heading."); return; }
+            copy.localRotation = Quaternion.FromToRotation(ahead, Vector3.forward) * copy.localRotation;
+        }
+
+        // ---- neon ----------------------------------------------------------------------------------------------------
+
+        /// <summary>The underglow Chassis fits on every car; on a chair it measures the frame and lands near the ground.</summary>
+        internal const string ChassisNeon = "Chassis_Tune_neon", ChassisNeonLight = "Chassis_Tune_neon_light_";
+
+        /// <summary>The strips Rollin puts under the seat in place of the Chassis ones.</summary>
+        internal const string SeatNeon = "rollin_neon";
+
+        /// <summary>
+        /// Moves the Chassis underglow to the underside of the seat: its strips are hidden and the same material runs as a
+        /// frame along the seat's edges on the chosen sides (the cargo box sits inside it), the two lights hang just below.
+        /// Chassis rebuilds the neon on every change, so a new one is fitted again on the next scan.
+        /// </summary>
+        internal static void FitNeon(LandVehicle lv, Transform neon)
+        {
+            var r = neon.GetComponent<MeshRenderer>();
+            if (r == null) { Core.Log.Warning("[Models] the Chassis neon on net " + Net.Ids.Of(lv) + " has no renderer - it stays where Chassis put it."); return; }
+            string value = ChassisApi.GetTuning(lv, "neon") ?? "";
+            int comma = value.IndexOf(',');
+            string sides = comma >= 0 ? value.Substring(comma + 1).ToLowerInvariant() : "fblr";
+            r.enabled = false;
+
+            var frame = new GameObject(SeatNeon).transform;
+            frame.SetParent(neon, false);
+            const float thick = 0.022f, x = 0.2f, back = -0.28f, front = 0.18f;
+            float y = SeatUnderside - thick * 0.5f;
+            var mat = r.sharedMaterial;
+            if (sides.IndexOf('l') >= 0) Strip(frame, new Vector3(-x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);
+            if (sides.IndexOf('r') >= 0) Strip(frame, new Vector3(x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);
+            if (sides.IndexOf('f') >= 0) Strip(frame, new Vector3(0f, y, front), new Vector3(2f * x + thick, thick, thick), mat);
+            if (sides.IndexOf('b') >= 0) Strip(frame, new Vector3(0f, y, back), new Vector3(2f * x + thick, thick, thick), mat);
+
+            int lights = 0;
+            foreach (var t in neon.GetComponentsInChildren<Transform>(true))
+            {
+                if (!t.name.StartsWith(ChassisNeonLight, StringComparison.Ordinal)) continue;
+                t.localPosition = new Vector3(0f, SeatUnderside - 0.06f, lights == 0 ? 0.1f : -0.2f);
+                lights++;
+            }
+            Core.Log.Msg("[Models] neon on net " + Net.Ids.Of(lv) + " moved under the seat (" + sides + "), " + lights + " light(s).");
+        }
+
+        private static void Strip(Transform parent, Vector3 at, Vector3 size, Material mat)
+        {
+            var t = Box(parent, "strip", at, size, mat);
+            t.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         // ---- simple shapes -----------------------------------------------------------------------------------------

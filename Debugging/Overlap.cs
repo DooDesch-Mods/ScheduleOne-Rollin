@@ -109,6 +109,8 @@ namespace Rollin.Debugging
         private static bool Allowed(string path, string zone)
         {
             if (path.Contains(Models.Hat)) return zone == "rider head";
+            // The gnome sits between the thighs on purpose; the leg bones still catch it if it touches a leg.
+            if (path.Contains("rollin_gnome")) return zone == "rider thighs";
             // The rider's hands grip the rims, so a rim may meet the arm zone as well.
             if (path.Contains(Models.SpinLeft)) return zone == "wheel L" || zone == "rider arm L";
             if (path.Contains(Models.SpinRight)) return zone == "wheel R" || zone == "rider arm R";

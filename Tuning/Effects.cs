@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Chassis.Api;
 using Rollin.Chair;
 using Rollin.Net;
 
@@ -42,6 +43,11 @@ namespace Rollin.Tuning
         internal static void Init()
         {
             WheelchairSpawn.Started += lv => { if (lv != null) _chairs[lv.Pointer] = new State { Lv = lv }; };
+            // A new neon would sit at the Chassis spot until the next scan; the change itself starts one.
+            ChassisApi.TuningChanged += (lv, key) =>
+            {
+                if (lv != null && _chairs.TryGetValue(lv.Pointer, out var s)) s.NextScan = 0f;
+            };
             // The seated pose (BipedIK) bends the body after OnLateUpdate. At the end of the frame the head has its final
             // pose; its spot in chair space is kept and the hat goes there in the next LateTick.
             MelonLoader.MelonCoroutines.Start(EndOfFrame());
@@ -133,6 +139,11 @@ namespace Rollin.Tuning
             {
                 if (t == null) continue;
                 string n = t.name;
+                if (n == Models.ChassisNeon && t.parent == root && t.Find(Models.SeatNeon) == null)
+                {
+                    Models.FitNeon(s.Lv, t);
+                    continue;
+                }
                 if (!n.StartsWith("rollin_", StringComparison.Ordinal)) continue;
                 switch (n)
                 {
