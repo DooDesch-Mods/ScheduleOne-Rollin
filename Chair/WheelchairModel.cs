@@ -42,10 +42,26 @@ namespace Rollin.Chair
             model.transform.localScale = Vector3.one;
             foreach (var c in model.GetComponentsInChildren<Collider>(true)) UnityEngine.Object.Destroy(c);
             foreach (var b in model.GetComponentsInChildren<MonoBehaviour>(true)) UnityEngine.Object.Destroy(b);
-            // The template can be the prop the swap just hid, whose renderers are off; the copy is the visible look.
-            int shown = 0;
-            foreach (var r in model.GetComponentsInChildren<Renderer>(true)) if (!r.enabled) { r.enabled = true; shown++; }
-            if (shown > 0) Core.Log.Msg("[Wheelchair] template " + template.parent.name + " was hidden, " + shown + " renderer(s) switched on in the copy.");
+            // The template can be the prop the swap just hid, whose renderers are all off. Each copy takes the state its
+            // renderer had before the hide: the prop carries extra meshes that are off in the game (white panels).
+            var source = template.GetComponentsInChildren<Renderer>(true);
+            var copies = model.GetComponentsInChildren<Renderer>(true);
+            if (source.Length != copies.Length)
+                Core.Log.Warning("[Wheelchair] template has " + source.Length + " renderer(s), the copy " + copies.Length + " - every renderer of the copy is shown.");
+            int on = 0, recorded = 0;
+            for (int i = 0; i < copies.Length; i++)
+            {
+                bool want = true;
+                if (source.Length == copies.Length)
+                {
+                    bool? before = PropSwap.EnabledBeforeHide(source[i]);
+                    if (before.HasValue) recorded++;
+                    want = before ?? source[i].enabled;
+                }
+                copies[i].enabled = want;
+                if (want) on++;
+            }
+            Core.Log.Msg("[Wheelchair] copy of " + template.parent.name + ": " + on + "/" + copies.Length + " renderer(s) on, " + recorded + " state(s) from before the swap hid the prop.");
 
             int moved = 0;
             moved += Hang(lv, frame, model.transform, "Wheel", WheelchairType.RimRight);

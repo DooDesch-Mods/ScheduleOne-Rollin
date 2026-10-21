@@ -33,6 +33,7 @@ namespace Rollin
             Start("garage", Tuning.Garage.Init);
             Start("tuning effects", Tuning.Effects.Init);
             Start("tuning menu", Tuning.Menu.Init);
+            Start("stock trim", Tuning.StockTrim.Init);
 
 #if DEBUG
             Log.Msg("Rollin (DEBUG) loaded. Type 'rollin help' in the console.");
@@ -64,6 +65,8 @@ namespace Rollin
             Tuning.Effects.Reset();
             Tuning.GameMeshes.Reset();
             Tuning.Menu.Reset();
+            Tuning.Cargo.Reset();
+            Tuning.StockTrim.Reset();
         }
 
         public override void OnLateUpdate()
@@ -80,6 +83,7 @@ namespace Rollin
             Guard("prop swap", Chair.PropSwap.Tick);
             Guard("push", Chair.Push.Tick);
             Guard("garage", Tuning.Garage.Tick);
+            Guard("cargo", Tuning.Cargo.Tick);
             Guard("tuning menu", Tuning.Menu.Tick);
 #if DEBUG
             Debugging.ConsoleRegistration.EnsureRegistered();

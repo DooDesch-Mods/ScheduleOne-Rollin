@@ -55,13 +55,12 @@ namespace Rollin.Tuning
         private const float BackPostX = 0.25f, BackZ = -0.236f, BackTilt = 5.5f, BackPostFoot = 0.46f;
 
         /// <summary>
-        /// The tailpipes run straight back right under the seat, outside the cargo box (x 0.13), just below the neon frame
-        /// (y 0.457) and under the jerry can's shelf (y 0.484): side offset, top edge, where the pipe starts, where the
-        /// wider tip starts and ends (behind the backrest, short of the pusher's feet), the bores, and where the hangers
-        /// to the seat sit.
+        /// The tailpipes run back right under the seat, outside the cargo box (x 0.13), just below the neon frame (y 0.457)
+        /// and under the jerry can's shelf (y 0.484): side offset, top edge, where the game's tailpipe starts and how long
+        /// it is (it ends behind the backrest, short of the pusher's feet), where the lead pipe in front of it starts, its
+        /// bore, and where the hangers to the seat sit.
         /// </summary>
-        private const float PipeX = 0.17f, PipeTop = 0.454f, PipeLead = -0.02f, PipeTipFrom = -0.44f, PipeEnd = -0.54f;
-        private const float PipeBore = 0.04f, PipeTipBore = 0.056f;
+        private const float PipeX = 0.17f, PipeTop = 0.454f, PipeFront = -0.2f, PipeLength = 0.3f, PipeLead = -0.02f, PipeBore = 0.04f;
         private static readonly float[] PipeHangers = { -0.06f, -0.16f };
 
         /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
@@ -80,9 +79,13 @@ namespace Rollin.Tuning
             yield return Part("rollin_exhaust_twin", "exhaust", "Twin Tailpipes", 900, TwinExhaust, new TuningStats { EnginePitch = 0.85f });
 
             // ---- cargo: a moving box from the game's storage, flush under the seat --------------------------------
+            // It opens as the chair's boot (Cargo).
             yield return Part("rollin_box", "cargo", "Moving Box", 30, root =>
-                Game(root, GameMeshes.Box, new Vector3(0f, SeatUnderside, 0.02f), new Vector3(0f, 12f, 0f), 0.26f, Axis.Longest, Anchor.Top),
-                new TuningStats { Mass = 1.05f });
+            {
+                var box = Game(root, GameMeshes.Box, new Vector3(0f, SeatUnderside, 0.02f), new Vector3(0f, 12f, 0f), 0.26f, Axis.Longest, Anchor.Top);
+                if (box == null) { Core.Log.Warning("[Models] no moving box mesh - the box cannot be opened."); return; }
+                Cargo.AddTrigger(root, GameMeshes.Measure(root, box));
+            }, new TuningStats { Mass = 1.05f });
 
             // ---- booster: a jerry can strapped to the back of the backrest -------------------------------------------
             yield return Part("rollin_jerrycan", "booster", "Jerry Can Rocket", 15000, JerryCanRocket,
@@ -190,22 +193,40 @@ namespace Rollin.Tuning
             if (piece == null) Core.Log.Warning("[Models] hat from '" + source + "' did not build.");
         }
 
+        /// <summary>Turn of the Bruiser tailpipe in its own axes; the console sets it in a Debug build.</summary>
+        internal static Vector3 PipeTurn = Vector3.zero;
+
+        /// <summary>
+        /// The Bruiser tailpipe in its own axes: a straight tube along Z whose back end bends up. The tube's bore is 0.08
+        /// of its 0.36 length.
+        /// </summary>
+        private const float TailpipeBoreRatio = 0.08f / 0.36f;
+
         private static void TwinExhaust(Transform root)
         {
             var metal = Flat(PipeMetal, 0.55f, 0.5f);
-            var chrome = Flat(Steel, 0.85f, 0.9f);
             var hanger = Trim(DarkSlate, 0.3f, 0.4f);
-            float tip = PipeTop - PipeTipBore * 0.5f;
+            float bore = PipeLength * TailpipeBoreRatio;
+            int pipes = 0;
             foreach (float side in new[] { 1f, -1f })
             {
-                float x = side * PipeX, y = PipeTop - PipeBore * 0.5f;
-                Tube(root, "pipe", new Vector3(x, y, PipeLead), new Vector3(x, y, PipeTipFrom + 0.02f), PipeBore, metal);
-                // The tip is wider and its top is flush with the pipe's, so it reads as a muffler end from behind.
-                Tube(root, "tip", new Vector3(x, tip, PipeTipFrom), new Vector3(x, tip, PipeEnd), PipeTipBore, chrome);
-                Marker(root, Backfire, new Vector3(x, tip, PipeEnd));
+                // The straight end faces forward and meets the lead pipe; the bent end rises behind the backrest.
+                var pipe = Game(root, GameMeshes.Tailpipe, new Vector3(side * PipeX, PipeTop, PipeFront), PipeTurn, PipeLength, Axis.Longest, Anchor.Front,
+                    metal, ownAxes: true);
+                if (pipe == null) continue;
+                pipes++;
+                // The bend only rises, so the lowest point is the tube's underside: its top edge goes to PipeTop.
+                var b = GameMeshes.Measure(root, pipe);
+                pipe.localPosition += new Vector3(0f, PipeTop - (b.min.y + bore), 0f);
+                float x = side * PipeX, y = PipeTop - bore * 0.5f;
+                if (side > 0f) Core.Log.Msg("[Models] tailpipe turned " + PipeTurn + ": " + b.size.ToString("F3") + ", bore " + bore.ToString("F3") + ".");
+                Marker(root, Backfire, new Vector3(x, PipeTop + 0.03f, PipeFront - PipeLength));
+                // The lead pipe reaches a little into the tailpipe so no seam shows where the game mesh starts.
+                Tube(root, "lead", new Vector3(x, y, PipeLead), new Vector3(x, y, PipeFront - 0.02f), PipeBore, metal);
                 foreach (float z in PipeHangers)
                     Box(root, "hanger", new Vector3(x, (PipeTop + SeatUnderside) * 0.5f, z), new Vector3(0.012f, SeatUnderside - PipeTop + 0.006f, 0.02f), hanger);
             }
+            if (pipes == 0) Core.Log.Warning("[Models] no tailpipe built - the exhaust part shows nothing.");
         }
 
         private static void JerryCanRocket(Transform root)
@@ -535,6 +556,22 @@ namespace Rollin.Tuning
 
         /// <summary>The trim paint (Chassis "paint2", "RRGGBB,finish") of the chair whose parts are being built, or null.</summary>
         private static string _trim;
+
+        /// <summary>The material of a trim paint value, or null when the value is empty or not RRGGBB.</summary>
+        internal static Material TrimPaint(string trim)
+        {
+            if (string.IsNullOrEmpty(trim)) return null;
+            string hex = trim.Split(',')[0].Trim().TrimStart('#');
+            if (hex.Length != 6 || !ColorUtility.TryParseHtmlString("#" + hex, out _))
+            {
+                Core.Log.Warning("[Models] trim paint '" + trim + "' is not RRGGBB - the stock trim keeps its own look.");
+                return null;
+            }
+            string saved = _trim;
+            _trim = trim;
+            try { return Trim(Color.black, 0f, 0f); }
+            finally { _trim = saved; }
+        }
 
         /// <summary>
         /// An accent material: the chair's trim paint while it has one, else <paramref name="c"/>. Its name does not start

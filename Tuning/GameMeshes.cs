@@ -12,10 +12,10 @@ namespace Rollin.Tuning
     /// </summary>
     internal static class GameMeshes
     {
-        internal const string RimSport = "rim_sport", RimMuscle = "rim_muscle", Lightbar = "lightbar",
+        internal const string RimSport = "rim_sport", RimMuscle = "rim_muscle", Tailpipe = "tailpipe", Lightbar = "lightbar",
             JerryCan = "jerrycan", Box = "box", Umbrella = "umbrella", Radio = "radio", Gnome = "gnome";
 
-        internal static readonly string[] All = { RimSport, RimMuscle, Lightbar, JerryCan, Box, Umbrella, Radio, Gnome };
+        internal static readonly string[] All = { RimSport, RimMuscle, Tailpipe, Lightbar, JerryCan, Box, Umbrella, Radio, Gnome };
 
         private static readonly Dictionary<string, Transform> _found = new Dictionary<string, Transform>(StringComparer.Ordinal);
         private static readonly HashSet<string> _missing = new HashSet<string>(StringComparer.Ordinal);
@@ -54,6 +54,7 @@ namespace Rollin.Tuning
             {
                 case RimSport: return Vehicle("cheetah", "SportsCarWheel_FL/ModelContainer/Model/Sports car wheel/sports car wheel");
                 case RimMuscle: return Vehicle("hounddog", "MuscleCarWheel_FR/ModelContainer/Model/Muscle Car Wheel/muscle car wheel");
+                case Tailpipe: return Vehicle("bruiser", "SUV/suv/TailPipe");
                 case Lightbar: return Vehicle("bruiser_police", "SUV/Lightbar/lightbar");
                 case JerryCan: return Item("gasoline", "jerry can");
                 case Box: return Named("smallbox", null, "Box");

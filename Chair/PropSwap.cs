@@ -37,6 +37,8 @@ namespace Rollin.Chair
             internal readonly List<KeyValuePair<Collider, bool>> Colliders = new List<KeyValuePair<Collider, bool>>();
             internal bool WasKinematic;
             internal bool Hidden;
+            /// <summary>The vehicle stands empty and stays a vehicle (it is tuned).</summary>
+            internal bool Parked;
         }
 
         private static readonly Dictionary<string, Prop> _props = new Dictionary<string, Prop>();
@@ -46,6 +48,9 @@ namespace Rollin.Chair
 
         /// <summary>Host: raised after a prop became a vehicle, with the prop key and the vehicle.</summary>
         internal static event Action<string, LandVehicle> Swapped;
+
+        /// <summary>Host: whether an empty vehicle of this prop stays a vehicle instead of turning back into the prop.</summary>
+        internal static Func<string, bool> KeepsVehicle;
 
         internal static void Reset()
         {
@@ -61,11 +66,40 @@ namespace Rollin.Chair
             return p;
         }
 
+        /// <summary>Host: the vehicle a prop is now, or null.</summary>
+        internal static LandVehicle VehicleOf(string key)
+        {
+            if (key == null || !_props.TryGetValue(key, out var p) || p.Vehicle < 0) return null;
+            return Ids.Find<LandVehicle>(p.Vehicle);
+        }
+
+        /// <summary>The keys of every prop that is a vehicle now.</summary>
+        internal static List<string> VehicleKeys()
+        {
+            var list = new List<string>();
+            foreach (var p in _props.Values) if (p.Vehicle >= 0) list.Add(p.Key);
+            return list;
+        }
+
         /// <summary>The prop key a swapped vehicle stands for, or null.</summary>
         internal static string KeyOfVehicle(int vehicle)
         {
             if (vehicle < 0) return null;
             foreach (var p in _props.Values) if (p.Vehicle == vehicle) return p.Key;
+            return null;
+        }
+
+        /// <summary>
+        /// Whether a renderer of a hidden prop was on before the swap hid it; null when no hidden prop recorded it.
+        /// </summary>
+        internal static bool? EnabledBeforeHide(Renderer r)
+        {
+            if (r == null) return null;
+            foreach (var p in _props.Values)
+            {
+                if (!p.Hidden) continue;
+                foreach (var kv in p.Renderers) if (Compat.Interop.Same(kv.Key, r)) return kv.Value;
+            }
             return null;
         }
 
@@ -147,21 +181,56 @@ namespace Rollin.Chair
         {
             if (!_props.ContainsKey(key)) Scan();
             if (!_props.TryGetValue(key, out var p) || p.Root == null) { Core.Log.Warning("[Swap] host: no prop " + key + ", Sit from player " + player + " dropped."); return; }
-            if (p.Hidden || p.Vehicle >= 0) { Core.Log.Msg("[Swap] host: prop " + key + " is already a vehicle (net " + p.Vehicle + "), Sit from player " + player + " dropped."); return; }
+            if (p.Vehicle >= 0)
+            {
+                var parked = Ids.Find<LandVehicle>(p.Vehicle);
+                if (parked != null && !parked.IsOccupied)
+                {
+                    // A parked chair: the player gets in like on a fresh swap.
+                    Core.Log.Msg("[Swap] host: prop " + key + " is parked as net " + p.Vehicle + ", player " + player + " gets in.");
+                    RollinNet.ToAll("swap", key, p.Vehicle.ToString(CultureInfo.InvariantCulture), player.ToString(CultureInfo.InvariantCulture));
+                    return;
+                }
+                Core.Log.Msg("[Swap] host: prop " + key + " is already a vehicle (net " + p.Vehicle + ") with someone in it, Sit from player " + player + " dropped.");
+                return;
+            }
+            if (p.Hidden) { Core.Log.Msg("[Swap] host: prop " + key + " is hidden without a vehicle, Sit from player " + player + " dropped."); return; }
+            Swap(p, Ground(p.Root.position) + Vector3.up * 0.05f, Heading(p), player, "Sit on prop " + key);
+        }
 
-            // Upright with the prop's heading: a knocked-over prop rolls on as a standing chair.
+        /// <summary>
+        /// Host, after loading: a tuned prop becomes its vehicle again where it was parked, with nobody in it. Returns
+        /// false when the prop is not in this world.
+        /// </summary>
+        internal static bool HostPark(string key, Vector3? at, float yaw)
+        {
+            if (!_props.ContainsKey(key)) Scan();
+            if (!_props.TryGetValue(key, out var p) || p.Root == null) { Core.Log.Warning("[Swap] host: no prop " + key + " in this world - its parked chair is not restored."); return false; }
+            if (p.Vehicle >= 0) { Core.Log.Msg("[Swap] host: prop " + key + " is a vehicle already (net " + p.Vehicle + ")."); return true; }
+            var pos = at ?? Ground(p.Root.position) + Vector3.up * 0.05f;
+            var rot = at.HasValue ? Quaternion.Euler(0f, yaw, 0f) : Heading(p);
+            return Swap(p, pos, rot, -1, "parked chair of prop " + key);
+        }
+
+        /// <summary>Upright with the prop's heading: a knocked-over prop rolls on as a standing chair.</summary>
+        private static Quaternion Heading(Prop p)
+        {
             Vector3 fwd = Vector3.ProjectOnPlane(p.Root.forward, Vector3.up);
             if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.ProjectOnPlane(p.Root.up, Vector3.up);
             if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
-            var rot = Quaternion.LookRotation(fwd.normalized, Vector3.up);
-            var pos = Ground(p.Root.position) + Vector3.up * 0.05f;
+            return Quaternion.LookRotation(fwd.normalized, Vector3.up);
+        }
 
-            var lv = WheelchairSpawn.Spawn(pos, rot, "Sit on prop " + key);
-            if (lv == null) return;
+        private static bool Swap(Prop p, Vector3 pos, Quaternion rot, int player, string why)
+        {
+            string key = p.Key;
+            var lv = WheelchairSpawn.Spawn(pos, rot, why);
+            if (lv == null) return false;
             RollinNet.ToAll("swap", key, Ids.Of(lv).ToString(CultureInfo.InvariantCulture), player.ToString(CultureInfo.InvariantCulture));
-            if (Swapped == null) return;
+            if (Swapped == null) return true;
             try { Swapped(key, lv); }
             catch (Exception e) { Core.Log.Error("[Swap] a swap handler failed for " + key + ": " + e); }
+            return true;
         }
 
         /// <summary>Ground height under a point, so a prop resting on its side does not spawn the vehicle in the air.</summary>
@@ -191,9 +260,16 @@ namespace Rollin.Chair
                     continue;
                 }
                 bool busy = lv.IsOccupied || Push.HasPusher(p.Vehicle) || Time.time - p.SwappedAt < EnterGrace;
-                if (busy) { p.EmptySince = -1f; continue; }
+                if (busy) { p.EmptySince = -1f; p.Parked = false; continue; }
                 if (p.EmptySince < 0f) { p.EmptySince = Time.time; continue; }
                 if (Time.time - p.EmptySince < EmptyGrace) continue;
+                if (KeepsVehicle != null && KeepsVehicle(p.Key))
+                {
+                    if (!p.Parked) Core.Log.Msg("[Swap] host: vehicle net " + p.Vehicle + " is empty and tuned - it stays parked as a vehicle (prop " + p.Key + ").");
+                    p.Parked = true;
+                    continue;
+                }
+                p.Parked = false;
 
                 var t = lv.transform;
                 Vector3 pos = t.position;

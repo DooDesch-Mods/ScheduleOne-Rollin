@@ -77,6 +77,7 @@ namespace Rollin.Tuning
         internal static void Reset()
         {
             _lv = null;
+            _orbit = false;
             if (_canvas != null) _canvas.SetActive(false);
         }
 
@@ -99,6 +100,47 @@ namespace Rollin.Tuning
             if (Input.GetKeyDown(KeyCode.A)) Cycle(-1);
             if (Input.GetKeyDown(KeyCode.D)) Cycle(1);
             Draw();
+            HoldOrbit();
+        }
+
+        // ---- camera ------------------------------------------------------------------------------------------------
+
+        /// <summary>True while the menu holds the game's right-click down for the vehicle camera.</summary>
+        private static bool _orbit;
+        private static bool _orbitWarned;
+
+        /// <summary>
+        /// With mouse and keyboard the vehicle camera orbits only while the right button is held. The menu holds that
+        /// button in the game's input state, so the mouse turns the camera around the chair. A real release of the right
+        /// button drops it from the list; the next frame puts it back.
+        /// </summary>
+        private static void HoldOrbit()
+        {
+            if (!Singleton<GameInput>.InstanceExists)
+            {
+                if (!_orbitWarned) { _orbitWarned = true; Core.Log.Warning("[Menu] no GameInput - the camera orbits only with the right button held."); }
+                return;
+            }
+            var gi = Singleton<GameInput>.Instance;
+            var code = GameInput.ButtonCode.SecondaryClick;
+            if (gi.buttonsDown.Contains(code)) return;
+            gi.buttonsDown.Add(code);
+            // The first frame of a press makes the camera start the orbit from where it looks now.
+            if (!gi.buttonsDownThisFrame.Contains(code)) gi.buttonsDownThisFrame.Add(code);
+            if (!_orbit) Core.Log.Msg("[Menu] the camera orbits with the mouse while the menu is open.");
+            _orbit = true;
+        }
+
+        private static void ReleaseOrbit(string why)
+        {
+            if (!_orbit) return;
+            _orbit = false;
+            if (!Singleton<GameInput>.InstanceExists) { Core.Log.Warning("[Menu] GameInput is gone - nothing to release (" + why + ")."); return; }
+            if (Input.GetMouseButton(1)) { Core.Log.Msg("[Menu] right button is really held - the camera keeps orbiting (" + why + ")."); return; }
+            var gi = Singleton<GameInput>.Instance;
+            gi.buttonsDown.Remove(GameInput.ButtonCode.SecondaryClick);
+            gi.buttonsUpThisFrame.Add(GameInput.ButtonCode.SecondaryClick);
+            Core.Log.Msg("[Menu] camera back to right-click orbit (" + why + ").");
         }
 
         /// <summary>The wheelchair the local player drives, or null.</summary>
@@ -126,6 +168,7 @@ namespace Rollin.Tuning
         internal static void Close(string why)
         {
             _lv = null;
+            ReleaseOrbit(why);
             if (_canvas != null) _canvas.SetActive(false);
             Core.Log.Msg("[Menu] closed (" + why + ").");
         }
