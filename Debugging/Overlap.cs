@@ -111,6 +111,9 @@ namespace Rollin.Debugging
             if (path.Contains(Models.Hat)) return zone == "rider head";
             // The gnome sits between the thighs on purpose; the leg bones still catch it if it touches a leg.
             if (path.Contains("rollin_gnome")) return zone == "rider thighs";
+            // The jerry can rack leans on the backrest, and the exhaust riser is bolted to the seat's underside.
+            if (path.Contains("rollin_rack")) return zone == "frame backrest";
+            if (path.Contains("Chassis_Tune_exhaust/riser") || path.Contains("Chassis_Tune_exhaust/flange")) return zone == "frame seat";
             // The rider's hands grip the rims, so a rim may meet the arm zone as well.
             if (path.Contains(Models.SpinLeft)) return zone == "wheel L" || zone == "rider arm L";
             if (path.Contains(Models.SpinRight)) return zone == "wheel R" || zone == "rider arm R";

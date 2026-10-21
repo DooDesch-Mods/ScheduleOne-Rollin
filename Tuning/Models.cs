@@ -39,8 +39,11 @@ namespace Rollin.Tuning
         /// <summary>The underside of the seat sling, where cargo hangs.</summary>
         private const float SeatUnderside = 0.43f;
 
-        /// <summary>The backrest's two upright tubes (x) and the back of its sling (z).</summary>
-        private const float BackPostX = 0.2f, BackZ = -0.43f;
+        /// <summary>The backrest's two upright tubes (x), the back of its sling at seat height (z), and how far it leans back.</summary>
+        private const float BackPostX = 0.2f, BackZ = -0.33f, BackTilt = 12f;
+
+        /// <summary>The tailpipes: side offset, height, front end, and the cross pipe that joins them in front of that.</summary>
+        private const float PipeX = 0.15f, PipeY = 0.17f, PipeFront = -0.23f, PipeJoin = -0.17f, PipeBore = 0.04f;
 
         /// <summary>The lightbar's place on the pole, above the rider's head (1.42 m).</summary>
         private const float LightbarTop = 1.46f;
@@ -54,16 +57,8 @@ namespace Rollin.Tuning
             yield return Rims("rollin_rims_sport", "Sports Rims", 1200, GameMeshes.RimSport, null);
             yield return Rims("rollin_rims_muscle", "Muscle Rims", 1600, GameMeshes.RimMuscle, new TuningStats { Grip = 1.1f });
 
-            // ---- exhaust: two Bruiser tailpipes under the seat, out the back -----------------------------------------
-            yield return Part("rollin_exhaust_twin", "exhaust", "Twin Tailpipes", 900, root =>
-            {
-                foreach (float x in new[] { 0.15f, -0.15f })
-                {
-                    var pipe = Game(root, GameMeshes.Tailpipe, new Vector3(x, 0.17f, -0.23f), Vector3.zero, 0.26f, Axis.Longest, Anchor.Front,
-                        Flat(PipeMetal, 0.55f, 0.5f), lengthAlongZ: true);
-                    if (pipe != null) Marker(root, Backfire, new Vector3(x, 0.17f, -0.5f));
-                }
-            }, new TuningStats { EnginePitch = 0.85f });
+            // ---- exhaust: two Bruiser tailpipes out the back, joined by a cross pipe that rises to the seat -----------
+            yield return Part("rollin_exhaust_twin", "exhaust", "Twin Tailpipes", 900, TwinExhaust, new TuningStats { EnginePitch = 0.85f });
 
             // ---- cargo: a moving box from the game's storage, flush under the seat --------------------------------
             yield return Part("rollin_box", "cargo", "Moving Box", 30, root =>
@@ -164,35 +159,69 @@ namespace Rollin.Tuning
             if (piece == null) Core.Log.Warning("[Models] hat from '" + source + "' did not build.");
         }
 
+        private static void TwinExhaust(Transform root)
+        {
+            var metal = Flat(PipeMetal, 0.55f, 0.5f);
+            int pipes = 0;
+            foreach (float x in new[] { PipeX, -PipeX })
+            {
+                var pipe = Game(root, GameMeshes.Tailpipe, new Vector3(x, PipeY, PipeFront), Vector3.zero, 0.26f, Axis.Longest, Anchor.Front,
+                    metal, lengthAlongZ: true);
+                if (pipe == null) continue;
+                pipes++;
+                Marker(root, Backfire, new Vector3(x, PipeY, -0.5f));
+                // Reaches a little into the tailpipe so no seam shows where the game mesh starts.
+                Tube(root, "elbow", new Vector3(x, PipeY, PipeFront - 0.02f), new Vector3(x, PipeY, PipeJoin - PipeBore * 0.5f), PipeBore, metal);
+            }
+            if (pipes == 0) { Core.Log.Warning("[Models] no tailpipe built - the exhaust stays without its cross pipe."); return; }
+            float half = PipeX + PipeBore * 0.5f;
+            Tube(root, "manifold", new Vector3(-half, PipeY, PipeJoin), new Vector3(half, PipeY, PipeJoin), PipeBore, metal);
+            // Up to the seat's underside, bolted on with a flange inside the neon frame.
+            Tube(root, "riser", new Vector3(0f, PipeY - PipeBore * 0.5f, PipeJoin), new Vector3(0f, SeatUnderside - 0.012f, PipeJoin), PipeBore, metal);
+            Box(root, "flange", new Vector3(0f, SeatUnderside - 0.006f, PipeJoin), new Vector3(0.07f, 0.012f, 0.07f), Flat(Steel, 0.4f, 0.6f));
+        }
+
         private static void JerryCanRocket(Transform root)
         {
-            // Standing on a steel shelf against the back of the backrest, held by two straps to the backrest tubes; the
-            // flame leaves the bottom through the shelf, tipped 20 degrees backwards so it stays short of the pusher's feet.
+            // A rack that leans with the backrest: the can stands on a steel shelf flat against the back of the sling, two
+            // straps hold it to the backrest tubes and a brace under each side carries the shelf from the tube. The flame
+            // leaves the bottom through the shelf, tipped backwards so it stays short of the pusher's feet.
             const float floor = 0.5f, height = 0.28f;
-            var can = Game(root, GameMeshes.JerryCan, new Vector3(0f, floor, BackZ), Vector3.zero, height, Axis.Height, Anchor.BottomFront, flatSideBack: true);
+            var rack = new GameObject("rollin_rack").transform;
+            rack.SetParent(root, false);
+            rack.localPosition = new Vector3(0f, floor, BackZ);
+            rack.localRotation = Quaternion.Euler(-BackTilt, 0f, 0f);
+            var can = Game(rack, GameMeshes.JerryCan, Vector3.zero, Vector3.zero, height, Axis.Height, Anchor.BottomFront, flatSideBack: true);
             if (can == null) return;
-            var b = GameMeshes.Measure(root, can);
-            float back = b.min.z - 0.006f, mid = (BackZ + back) * 0.5f, depth = BackZ - back;
+            var b = GameMeshes.Measure(rack, can);
+            float back = b.min.z - 0.006f, mid = back * 0.5f, depth = -back;
             var steel = Flat(Steel, 0.4f, 0.6f);
             var strap = Flat(DarkSlate, 0.1f, 0f);
             float span = 2f * BackPostX + 0.02f;
-            Box(root, "shelf", new Vector3(0f, floor - 0.008f, mid), new Vector3(span, 0.016f, depth + 0.02f), steel);
-            foreach (float y in new[] { floor + height * 0.3f, floor + height * 0.75f })
+            Box(rack, "shelf", new Vector3(0f, -0.008f, mid), new Vector3(span, 0.016f, depth + 0.02f), steel);
+            foreach (float x in new[] { -1f, 1f })
             {
-                Box(root, "strap", new Vector3(0f, y, back - 0.004f), new Vector3(b.size.x + 0.01f, 0.03f, 0.008f), strap);
+                // From the shelf's back corner down and forward to the tube.
+                var brace = Strut(rack, "brace", new Vector3(x * BackPostX, -0.016f, back + 0.012f), new Vector3(x * BackPostX, -0.12f, 0f), 0.012f, steel);
+                if (brace == null) Core.Log.Warning("[Models] the jerry can rack has no brace on side " + x + ".");
+            }
+            foreach (float y in new[] { height * 0.3f, height * 0.75f })
+            {
+                Box(rack, "strap", new Vector3(0f, y, back - 0.004f), new Vector3(b.size.x + 0.01f, 0.03f, 0.008f), strap);
                 foreach (float x in new[] { -1f, 1f })
                 {
                     // From the can's edge round to the tube.
                     float edge = x * (b.size.x * 0.5f + 0.005f), tube = x * BackPostX;
-                    Box(root, "strap", new Vector3((edge + tube) * 0.5f, y, back - 0.004f), new Vector3(Mathf.Abs(tube - edge) + 0.01f, 0.03f, 0.008f), strap);
-                    Box(root, "strap", new Vector3(tube, y, mid - 0.002f), new Vector3(0.008f, 0.03f, depth + 0.012f), strap);
+                    Box(rack, "strap", new Vector3((edge + tube) * 0.5f, y, back - 0.004f), new Vector3(Mathf.Abs(tube - edge) + 0.01f, 0.03f, 0.008f), strap);
+                    Box(rack, "strap", new Vector3(tube, y, mid - 0.002f), new Vector3(0.008f, 0.03f, depth + 0.012f), strap);
                 }
             }
 
             var nozzle = new GameObject("rollin_nozzle").transform;
-            nozzle.SetParent(root, false);
-            nozzle.localPosition = new Vector3(0f, floor - 0.016f, b.center.z);
-            nozzle.localRotation = Quaternion.Euler(-20f, 0f, 0f);
+            nozzle.SetParent(rack, false);
+            nozzle.localPosition = new Vector3(0f, -0.016f, b.center.z);
+            // 20 degrees back from straight down in chair space; the rack already leans BackTilt of it.
+            nozzle.localRotation = Quaternion.Euler(-(20f - BackTilt), 0f, 0f);
             Box(nozzle, "ring", new Vector3(0f, -0.012f, 0f), new Vector3(0.06f, 0.024f, 0.06f), DarkSlate, false);
 
             var flame = new GameObject(Flame).transform;
@@ -435,6 +464,33 @@ namespace Rollin.Tuning
             go.transform.localScale = size;
             go.GetComponent<Renderer>().sharedMaterial = mat;
             return go.transform;
+        }
+
+        /// <summary>A round pipe of diameter <paramref name="bore"/> from <paramref name="from"/> to <paramref name="to"/>.</summary>
+        private static Transform Tube(Transform parent, string name, Vector3 from, Vector3 to, float bore, Material mat)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            var col = go.GetComponent<Collider>();
+            if (col != null) UnityEngine.Object.DestroyImmediate(col);
+            go.name = name;
+            var t = go.transform;
+            t.SetParent(parent, false);
+            // The primitive is 2 long along Y with diameter 1.
+            t.localPosition = (from + to) * 0.5f;
+            t.localRotation = Quaternion.FromToRotation(Vector3.up, to - from);
+            t.localScale = new Vector3(bore, (to - from).magnitude * 0.5f, bore);
+            go.GetComponent<Renderer>().sharedMaterial = mat;
+            return t;
+        }
+
+        /// <summary>A square bar of width <paramref name="width"/> from <paramref name="from"/> to <paramref name="to"/>.</summary>
+        private static Transform Strut(Transform parent, string name, Vector3 from, Vector3 to, float width, Material mat)
+        {
+            var d = to - from;
+            if (d.sqrMagnitude < 1e-8f) return null;
+            var t = Box(parent, name, (from + to) * 0.5f, new Vector3(width, width, d.magnitude), mat);
+            t.localRotation = Quaternion.LookRotation(d, Vector3.up);
+            return t;
         }
 
         private static void AddCone(Transform parent, string name, float radius, float length, Color c)
