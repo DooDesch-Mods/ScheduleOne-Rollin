@@ -9,6 +9,7 @@
 ![Game](https://img.shields.io/badge/game-Schedule%20I-purple)
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
+[![Polyfill](https://polyfill.doomods.com/badge/rollin.svg)](https://polyfill.doomods.com/mod/rollin)
 
 [![MLVScan Rollin.dll](https://mlvscan.com/attestations/att_PIojLJwaQtNIk46OIcLlNGWh/badge.svg)](https://mlvscan.com/attestations/att_PIojLJwaQtNIk46OIcLlNGWh)
 
