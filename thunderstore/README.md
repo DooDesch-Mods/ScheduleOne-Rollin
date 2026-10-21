@@ -10,6 +10,8 @@
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
 
+[![MLVScan Rollin.dll](https://mlvscan.com/attestations/att_ZYbEWxQ1vmicJFi8FNPchpih/badge.svg)](https://mlvscan.com/attestations/att_ZYbEWxQ1vmicJFi8FNPchpih)
+
 ![Rollin](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/header.jpg)
 
 ## Features
