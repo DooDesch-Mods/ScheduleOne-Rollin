@@ -4,6 +4,21 @@ All notable changes to Rollin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.0.3] - 2026-10-21
+
+### Added
+- The Moving Box has 4 slots: press E at the box while the chair stands still. What you put in is saved.
+- Trim paint also colours the chair's grips, armrests and footrests.
+
+### Changed
+- A tuned chair stays parked where you get out, and it is still there after a reload.
+- In the tuning menu the camera follows the mouse, no right-click needed.
+
+### Fixed
+- The chair lost its tuning when you got out.
+- You sat too far back, and white boxes showed around the chair while sitting.
+- The exhaust looks like in 1.0.1 again instead of two plain pipes.
+
 ## [1.0.2] - 2026-10-21
 
 ### Fixed

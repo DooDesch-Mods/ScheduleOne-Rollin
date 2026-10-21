@@ -5,7 +5,7 @@
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
 > rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
-![Version](https://img.shields.io/badge/version-1.0.2-blue)
+![Version](https://img.shields.io/badge/version-1.0.3-blue)
 ![Game](https://img.shields.io/badge/game-Schedule%20I-purple)
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
