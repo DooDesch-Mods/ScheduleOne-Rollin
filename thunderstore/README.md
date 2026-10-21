@@ -42,7 +42,7 @@
 | Horn | Clown Horn, Rubber Duck, Freight Train, Charge!, La Cucaracha, Bicycle Horn |
 | Spoiler | Handle Wing |
 | Booster | Jerry Can Rocket (flame, light and thrust sound) |
-| Exhaust | Twin Tailpipes (they backfire when you brake hard) |
+| Exhaust | Twin Tailpipes (they smoke while you ride) |
 | Rims | Sports Rims, Muscle Rims |
 | Hat | Gnome Hat (it sits on the rider's head) |
 | Mascot | Garden Gnome (it sits between the rider's legs) |

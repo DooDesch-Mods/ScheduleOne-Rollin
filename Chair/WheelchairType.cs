@@ -264,7 +264,11 @@ namespace Rollin.Chair
             w.modelContainer = container;
             w.wheelModel = pivot;
             w.DriftParticlesEnabled = false;
-            w.DriftAudioEnabled = false;
+            // The tyres squeal like the car's when they slide; the hull switched every car sound off above.
+            var squeal = w.DriftAudioSource != null ? w.DriftAudioSource.GetComponentInChildren<AudioSource>(true) : null;
+            if (squeal != null) squeal.enabled = true;
+            else Core.Log.Warning("[Wheelchair] wheel " + w.name + " has no tyre sound - it slides silently.");
+            w.DriftAudioEnabled = squeal != null;
             if (w.staticCollider != null) w.staticCollider.enabled = false;
         }
 

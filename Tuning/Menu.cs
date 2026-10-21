@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Chassis.Api;
-using HarmonyLib;
 using Il2CppTMPro;
 using Rollin.Chair;
 using UnityEngine.UI;
@@ -76,6 +75,7 @@ namespace Rollin.Tuning
 
         internal static void Reset()
         {
+            if (_lv != null) Lock(_lv, false, "reset");
             _lv = null;
             _orbit = false;
             if (_canvas != null) _canvas.SetActive(false);
@@ -158,6 +158,7 @@ namespace Rollin.Tuning
             BuildRows();
             if (!EnsureCanvas()) return false;
             _lv = lv;
+            Lock(lv, true, why);
             _row = Mathf.Clamp(_row, 0, _rows.Count - 1);
             _canvas.SetActive(true);
             Draw();
@@ -167,7 +168,9 @@ namespace Rollin.Tuning
 
         internal static void Close(string why)
         {
+            var lv = _lv;
             _lv = null;
+            if (lv != null) Lock(lv, false, why);
             ReleaseOrbit(why);
             if (_canvas != null) _canvas.SetActive(false);
             Core.Log.Msg("[Menu] closed (" + why + ").");
@@ -345,26 +348,16 @@ namespace Rollin.Tuning
 
         // ---- the menu borrows the driving keys ---------------------------------------------------------------------
 
-        [HarmonyPatch(typeof(LandVehicle), "UpdateThrottle")]
-        private static class HoldThrottle
+        /// <summary>
+        /// W, A, S and D move through the menu, so the chair stands still while it is open: the game's own control
+        /// override (LandVehicle.Update) drives it with no throttle and straight wheels.
+        /// </summary>
+        private static void Lock(LandVehicle lv, bool on, string why)
         {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix(LandVehicle __instance)
-            {
-                if (_lv == null || !Compat.Interop.Same(_lv, __instance)) return;
-                __instance.currentThrottle = 0f;
-            }
-        }
-
-        [HarmonyPatch(typeof(LandVehicle), "UpdateSteerAngle")]
-        private static class HoldSteer
-        {
-            [HarmonyPriority(Priority.Last)]
-            private static void Postfix(LandVehicle __instance)
-            {
-                if (_lv == null || !Compat.Interop.Same(_lv, __instance)) return;
-                __instance.CurrentSteerAngle = Mathf.MoveTowards(__instance.CurrentSteerAngle, 0f, __instance.steerRate * Time.deltaTime);
-            }
+            lv.overrideControls = on;
+            lv.throttleOverride = 0f;
+            lv.steerOverride = 0f;
+            Core.Log.Msg("[Menu] net " + Net.Ids.Of(lv) + (on ? " stands still while the menu is open" : " drives again") + " (" + why + ").");
         }
     }
 }

@@ -16,8 +16,7 @@ namespace Rollin.Tuning
         // Names Effects drives.
         internal const string SpinLeft = "rollin_spin_L", SpinRight = "rollin_spin_R";
         internal const string Hat = "rollin_hat";
-        internal const string Thruster = "rollin_thruster";
-        internal const string Backfire = "rollin_backfire";
+        internal const string SmokePoint = "rollin_smoke", SmokeFx = "rollin_smoke_fx";
         internal const string BlinkRed = "rollin_blink_red", BlinkBlue = "rollin_blink_blue";
         internal const string BlinkOn = "rollin_on";
         internal const string Pulse = "rollin_pulse";
@@ -194,7 +193,7 @@ namespace Rollin.Tuning
         }
 
         /// <summary>Turn of the Bruiser tailpipe in its own axes; the console sets it in a Debug build.</summary>
-        internal static Vector3 PipeTurn = Vector3.zero;
+        internal static Vector3 PipeTurn = new Vector3(0f, 180f, 0f);
 
         /// <summary>
         /// The Bruiser tailpipe in its own axes: a straight tube along Z whose back end bends up. The tube's bore is 0.08
@@ -210,7 +209,7 @@ namespace Rollin.Tuning
             int pipes = 0;
             foreach (float side in new[] { 1f, -1f })
             {
-                // The straight end faces forward and meets the lead pipe; the bent end rises behind the backrest.
+                // PipeTurn points the mesh's finished outlet back; the lead pipe meets its front end.
                 var pipe = Game(root, GameMeshes.Tailpipe, new Vector3(side * PipeX, PipeTop, PipeFront), PipeTurn, PipeLength, Axis.Longest, Anchor.Front,
                     metal, ownAxes: true);
                 if (pipe == null) continue;
@@ -220,7 +219,7 @@ namespace Rollin.Tuning
                 pipe.localPosition += new Vector3(0f, PipeTop - (b.min.y + bore), 0f);
                 float x = side * PipeX, y = PipeTop - bore * 0.5f;
                 if (side > 0f) Core.Log.Msg("[Models] tailpipe turned " + PipeTurn + ": " + b.size.ToString("F3") + ", bore " + bore.ToString("F3") + ".");
-                Marker(root, Backfire, new Vector3(x, PipeTop + 0.03f, PipeFront - PipeLength));
+                Marker(root, SmokePoint, new Vector3(x, PipeTop + 0.03f, PipeFront - PipeLength));
                 // The lead pipe reaches a little into the tailpipe so no seam shows where the game mesh starts.
                 Tube(root, "lead", new Vector3(x, y, PipeLead), new Vector3(x, y, PipeFront - 0.02f), PipeBore, metal);
                 foreach (float z in PipeHangers)
@@ -263,11 +262,6 @@ namespace Rollin.Tuning
                     Box(rack, "strap", new Vector3(tube, y, (back + 0.014f) * 0.5f), new Vector3(0.008f, 0.03f, 0.014f - back), strap);
                 }
             }
-
-            var thruster = new GameObject(Thruster);
-            thruster.transform.SetParent(rack, false);
-            thruster.transform.localPosition = b.center;
-            Sounds.AddLoop(thruster, "thruster");
         }
 
         private static void Wing(Transform root)

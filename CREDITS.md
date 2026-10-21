@@ -10,8 +10,6 @@ The tuning parts are built from Schedule I's own meshes and materials at runtime
 
 | File | Source asset | Author | Source | Licence |
 |---|---|---|---|---|
-| `thruster.pcm` | `thrusterFire_000.ogg` from Sci-fi Sounds | Kenney | https://kenney.nl/assets/sci-fi-sounds | CC0 |
-| `backfire.pcm` | `explosionCrunch_000.ogg` from Sci-fi Sounds | Kenney | https://kenney.nl/assets/sci-fi-sounds | CC0 |
 | `bicycle.pcm` | `bicycle-horn-1.wav` | AntumDeluge | https://opengameart.org/content/bicycle-horn | CC0 |
 
 The sounds are stored as 16-bit mono PCM at 22050 Hz. The clown, duck, train, "Charge!" and La Cucaracha horns are

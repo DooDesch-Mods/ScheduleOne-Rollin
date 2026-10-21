@@ -6,8 +6,8 @@ using Chassis.Api;
 namespace Rollin.Tuning
 {
     /// <summary>
-    /// The CC0 sounds Rollin carries (<c>Assets/sounds/*.pcm</c>, 16-bit mono at 22050 Hz, see CREDITS.md): the rocket's
-    /// thruster loop, the exhaust backfire and the bicycle horn, which joins the synthesised horns in Chassis.
+    /// The CC0 sounds Rollin carries (<c>Assets/sounds/*.pcm</c>, 16-bit mono at 22050 Hz, see CREDITS.md): the bicycle
+    /// horn, which joins the synthesised horns in Chassis.
     /// </summary>
     internal static class Sounds
     {
@@ -54,42 +54,6 @@ namespace Rollin.Tuning
                 _failed.Add(name);
                 return null;
             }
-        }
-
-        /// <summary>A looping 3D source on <paramref name="go"/>, silent until Effects turns it up.</summary>
-        internal static AudioSource AddLoop(GameObject go, string name)
-        {
-            var clip = Get(name);
-            if (clip == null) return null;
-            var src = go.AddComponent<AudioSource>();
-            src.clip = clip;
-            src.loop = true;
-            src.playOnAwake = false;
-            src.spatialBlend = 1f;
-            src.minDistance = 1.5f;
-            src.maxDistance = 30f;
-            src.rolloffMode = AudioRolloffMode.Linear;
-            src.volume = 0f;
-            return src;
-        }
-
-        /// <summary>A one-shot at a world point (the backfire pop).</summary>
-        internal static void PlayAt(string name, Vector3 at, float volume, float pitch)
-        {
-            var clip = Get(name);
-            if (clip == null) return;
-            var go = new GameObject("rollin_oneshot_" + name);
-            go.transform.position = at;
-            var src = go.AddComponent<AudioSource>();
-            src.clip = clip;
-            src.spatialBlend = 1f;
-            src.minDistance = 2f;
-            src.maxDistance = 40f;
-            src.rolloffMode = AudioRolloffMode.Linear;
-            src.volume = volume;
-            src.pitch = pitch;
-            src.Play();
-            UnityEngine.Object.Destroy(go, clip.length / Mathf.Max(0.1f, pitch) + 0.1f);
         }
     }
 }
