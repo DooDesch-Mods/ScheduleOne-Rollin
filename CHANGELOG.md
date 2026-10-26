@@ -4,6 +4,20 @@ All notable changes to Rollin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.1.0] - 2026-10-26
+
+### Added
+- Hold Shift to sprint. Each push costs stamina, like on the skateboard.
+- With the Jerry Can Rocket fitted, hold Left Ctrl for nitro: blue flames come out of the Twin Tailpipes.
+- The nitro tank lasts 10 seconds and refills by itself in 30 seconds. The key hint shows how full it is.
+- Speeds, the nitro key and the tank times are in MelonPreferences: `SpeedNormal`, `SpeedSprint`, `SpeedNitro`,
+  `NitroKey`, `NitroSeconds`, `NitroRechargeSeconds`.
+
+### Changed
+- Wheelchairs roll 20% faster.
+- The Jerry Can Rocket no longer makes the chair faster on its own. It powers the nitro now.
+- Needs Chassis 1.7.0.
+
 ## [1.0.4] - 2026-10-21
 
 ### Changed
