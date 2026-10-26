@@ -5,7 +5,7 @@
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
 > rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
-![Version](https://img.shields.io/badge/version-1.0.4-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![Game](https://img.shields.io/badge/game-Schedule%20I-purple)
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
@@ -30,6 +30,8 @@
 - Everything is synced in co-op: who sits, who pushes, and every part on every chair. The host keeps each chair's
   tuning with the save.
 - Get up and the chair is a normal prop again. Sit down in it later and its tuning is back.
+
+![Nitro: blue flames out of the twin tailpipes](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/nitro.jpg)
 
 ![A tuned wheelchair from behind: jerry can rocket, twin tailpipes, umbrella and lightbar](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/tuned.jpg)
 
@@ -66,7 +68,7 @@
 ## Requirements
 
 - [MelonLoader](https://melonwiki.xyz/) 0.7.3 or newer
-- [Chassis](https://github.com/DooDesch-Mods/ScheduleOne-Chassis), the vehicle framework Rollin is built on.
+- [Chassis](https://github.com/DooDesch-Mods/ScheduleOne-Chassis) 1.7.0 or newer, the vehicle framework Rollin is built on.
   Without Rollin, Chassis leaves the wheelchairs as props.
 
 ## Installation
