@@ -70,6 +70,7 @@ namespace Rollin.Debugging
                         Say("tune max | clear | show       - the full silly build | stock | what the chair wears");
                         Say("tune overlap                  - every part that enters the rider, the pusher or the frame");
                         Say("tune nudge <slot> [<name> pos|rot|size <x> [<y> <z>]] - list a built part's pieces, or move one live");
+                        Say("boost [sprint|nitro|off] [s]  - speed state, or hold sprint or nitro for s seconds (default 3) without keys");
                         Say("parts [slot]                  - every Rollin part with its id");
                         Say("meshes                        - every game mesh the parts copy: where from, size, material");
                         Say("menu [open|close|up|down|left|right] - the T menu without keys");
@@ -81,6 +82,7 @@ namespace Rollin.Debugging
                         Say(PropSwap.Describe());
                         Say(Push.Describe());
                         Say(Effects.Describe());
+                        Say(Boost.Describe());
                         Say("menu " + (Menu.IsOpen ? "open" : "closed"));
                         foreach (var lv in Chairs())
                         {
@@ -169,6 +171,19 @@ namespace Rollin.Debugging
                         int n = 0;
                         foreach (var lv in Chairs()) { WheelchairSpawn.Despawn(lv, "console"); n++; }
                         Say("despawned " + n);
+                        break;
+                    }
+
+                    case "boost":
+                    {
+                        string what = parts.Length > 2 ? parts[2].ToLowerInvariant() : "";
+                        float secs = parts.Length > 3 && float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float sv) ? sv : 3f;
+                        if (what == "sprint") Boost.ForceSprintUntil = Time.time + secs;
+                        else if (what == "nitro") Boost.ForceNitroUntil = Time.time + secs;
+                        else if (what == "off") Boost.ForceSprintUntil = Boost.ForceNitroUntil = -1f;
+                        else if (what != "") { Say("boost: sprint, nitro or off"); break; }
+                        if (what == "sprint" || what == "nitro") Say("boost: holding " + what + " for " + secs.ToString("0.#", CultureInfo.InvariantCulture) + " s");
+                        Say(Boost.Describe());
                         break;
                     }
 

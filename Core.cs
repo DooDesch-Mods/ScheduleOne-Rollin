@@ -34,6 +34,7 @@ namespace Rollin
             Start("tuning effects", Tuning.Effects.Init);
             Start("tuning menu", Tuning.Menu.Init);
             Start("stock trim", Tuning.StockTrim.Init);
+            Start("boost", Chair.Boost.Init);
 
 #if DEBUG
             Log.Msg("Rollin (DEBUG) loaded. Type 'rollin help' in the console.");
@@ -61,6 +62,8 @@ namespace Rollin
             Chair.Push.Reset();
             Chair.PropSwap.Reset();
             Chair.WheelchairModel.Reset();
+            Chair.Boost.Reset();
+            Tuning.Flames.Reset();
             Tuning.Garage.Reset();
             Tuning.Effects.Reset();
             Tuning.GameMeshes.Reset();
@@ -82,6 +85,7 @@ namespace Rollin
             Guard("sync", Net.Sync.Tick);
             Guard("prop swap", Chair.PropSwap.Tick);
             Guard("push", Chair.Push.Tick);
+            Guard("boost", Chair.Boost.Tick);
             Guard("garage", Tuning.Garage.Tick);
             Guard("cargo", Tuning.Cargo.Tick);
             Guard("tuning menu", Tuning.Menu.Tick);
