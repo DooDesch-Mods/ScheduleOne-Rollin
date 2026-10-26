@@ -17,6 +17,7 @@ namespace Rollin.Tuning
         internal const string SpinLeft = "rollin_spin_L", SpinRight = "rollin_spin_R";
         internal const string Hat = "rollin_hat";
         internal const string SmokePoint = "rollin_smoke", SmokeFx = "rollin_smoke_fx";
+        internal const string NitroPoint = "rollin_nitro";
         internal const string BlinkRed = "rollin_blink_red", BlinkBlue = "rollin_blink_blue";
         internal const string BlinkOn = "rollin_on";
         internal const string Pulse = "rollin_pulse";
@@ -220,6 +221,8 @@ namespace Rollin.Tuning
                 float x = side * PipeX, y = PipeTop - bore * 0.5f;
                 if (side > 0f) Core.Log.Msg("[Models] tailpipe turned " + PipeTurn + ": " + b.size.ToString("F3") + ", bore " + bore.ToString("F3") + ".");
                 Marker(root, SmokePoint, new Vector3(x, PipeTop + 0.03f, PipeFront - PipeLength));
+                // The nitro flame starts in the middle of the bore; the smoke point above sits over the rim.
+                Marker(root, NitroPoint, new Vector3(x, y, PipeFront - PipeLength));
                 // The lead pipe reaches a little into the tailpipe so no seam shows where the game mesh starts.
                 Tube(root, "lead", new Vector3(x, y, PipeLead), new Vector3(x, y, PipeFront - 0.02f), PipeBore, metal);
                 foreach (float z in PipeHangers)

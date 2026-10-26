@@ -134,9 +134,11 @@ namespace Rollin.Tuning
                         s.HatHome = t.parent;
                         foreach (var r in t.GetComponentsInChildren<Renderer>(true)) s.HatRenderers.Add(r);
                         break;
-                    case Models.SmokePoint:
+                    case Models.NitroPoint:
                         var flame = Tuning.Flames.At(s.Lv, t);
                         if (flame != null) s.Flames.Add(flame);
+                        break;
+                    case Models.SmokePoint:
                         var fx = SmokeAt(s.Lv, t);
                         if (fx != null) s.Smokes.Add(fx);
                         break;
