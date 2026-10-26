@@ -11,7 +11,7 @@
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
 [![Polyfill](https://polyfill.doomods.com/badge/rollin.svg)](https://polyfill.doomods.com/mod/rollin)
 
-[![MLVScan Rollin.dll](https://mlvscan.com/attestations/att_PIojLJwaQtNIk46OIcLlNGWh/badge.svg)](https://mlvscan.com/attestations/att_PIojLJwaQtNIk46OIcLlNGWh)
+[![MLVScan Rollin.dll](https://mlvscan.com/attestations/att_FX1ZQL0DsMVqnA_wCpQLu8mP/badge.svg)](https://mlvscan.com/attestations/att_FX1ZQL0DsMVqnA_wCpQLu8mP)
 
 ![Rollin](https://raw.githubusercontent.com/DooDesch-Mods/ScheduleOne-Rollin/main/docs/img/header.jpg)
 
