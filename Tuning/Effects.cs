@@ -8,8 +8,8 @@ namespace Rollin.Tuning
 {
     /// <summary>
     /// Moves the parts that are more than a model, on every peer for its own copy of each chair: rims turn with the
-    /// wheel pivots, the hat sits on the rider's head, the tailpipes smoke while someone sits in the chair, the
-    /// lightbar flashes and the speakers bounce. Runs late in the frame, after the wheels moved.
+    /// wheel pivots, the hat sits on the rider's head, the tailpipes smoke while someone sits in the chair and spit
+    /// flames on nitro, the lightbar flashes and the speakers bounce. Runs late in the frame, after the wheels moved.
     /// </summary>
     internal static class Effects
     {
@@ -23,6 +23,7 @@ namespace Rollin.Tuning
             internal Transform HatHome;
             internal readonly List<Renderer> HatRenderers = new List<Renderer>();
             internal readonly List<ParticleSystem> Smokes = new List<ParticleSystem>();
+            internal readonly List<Transform> Flames = new List<Transform>();
             internal readonly List<Wheel> Tyres = new List<Wheel>();
             internal bool Squealing;
             internal readonly List<Transform> Pulses = new List<Transform>();
@@ -92,6 +93,7 @@ namespace Rollin.Tuning
             Rims(s);
             Hat(s);
             Smoke(s);
+            Tuning.Flames.Tick(s.Flames, s.Lv.IsOccupied && Tuning.Flames.IsOn(Ids.Of(s.Lv)));
             Squeal(s);
             Lightbar(s);
             Pulse(s);
@@ -108,7 +110,7 @@ namespace Rollin.Tuning
             s.PivotL = s.PivotL != null ? s.PivotL : WheelchairType.Find(root, WheelchairType.RimLeft);
             s.PivotR = s.PivotR != null ? s.PivotR : WheelchairType.Find(root, WheelchairType.RimRight);
             s.SpinL = s.SpinR = s.Hat = s.HatHome = s.Red = s.Blue = null;
-            s.HatRenderers.Clear(); s.Smokes.Clear(); s.Pulses.Clear();
+            s.HatRenderers.Clear(); s.Smokes.Clear(); s.Flames.Clear(); s.Pulses.Clear();
             if (s.Tyres.Count == 0) foreach (var w in root.GetComponentsInChildren<Wheel>(true)) if (w != null && w.DriftAudioEnabled) s.Tyres.Add(w);
             foreach (var t in root.GetComponentsInChildren<Transform>(true))
             {
@@ -133,6 +135,8 @@ namespace Rollin.Tuning
                         foreach (var r in t.GetComponentsInChildren<Renderer>(true)) s.HatRenderers.Add(r);
                         break;
                     case Models.SmokePoint:
+                        var flame = Tuning.Flames.At(s.Lv, t);
+                        if (flame != null) s.Flames.Add(flame);
                         var fx = SmokeAt(s.Lv, t);
                         if (fx != null) s.Smokes.Add(fx);
                         break;
@@ -364,6 +368,7 @@ namespace Rollin.Tuning
                 parts.Add("net " + Ids.Of(s.Lv) + " " + s.Speed.ToString("F1") + " km/h"
                     + (s.SpinL != null ? ", rims" : "") + (s.Hat != null ? ", hat" + (s.Head != null && s.Hat.parent == s.Head ? " on head" : " on seat") : "")
                     + (s.Smokes.Count > 0 ? ", " + s.Smokes.Count + " smoking pipe(s) " + SmokeInfo(s.Smokes[0]) : "")
+                    + (s.Flames.Count > 0 ? ", " + s.Flames.Count + " flame(s) " + (Tuning.Flames.IsOn(Ids.Of(s.Lv)) ? "burning" : "out") : "")
                     + (s.Red != null ? ", lightbar" : "") + (s.Pulses.Count > 0 ? ", speaker" : ""));
             }
             return "effects: " + (parts.Count == 0 ? "no chairs" : string.Join("; ", parts));

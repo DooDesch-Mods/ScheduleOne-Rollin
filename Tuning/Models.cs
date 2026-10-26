@@ -87,8 +87,8 @@ namespace Rollin.Tuning
             }, new TuningStats { Mass = 1.05f });
 
             // ---- booster: a jerry can strapped to the back of the backrest -------------------------------------------
-            yield return Part("rollin_jerrycan", "booster", "Jerry Can Rocket", 15000, JerryCanRocket,
-                new TuningStats { Torque = 1.8f, Gearing = 1.8f, EnginePitch = 1.2f });
+            // The can is the nitro bottle: it adds no speed of its own, the nitro key does (Chair.Boost).
+            yield return Part("rollin_jerrycan", "booster", "Jerry Can Rocket", 15000, JerryCanRocket, null);
 
             // ---- spoiler: a wing on two struts on the push handles ----------------------------------------------------
             yield return Part("rollin_wing", "spoiler", "Handle Wing", 2500, Wing, new TuningStats { Grip = 1.1f });

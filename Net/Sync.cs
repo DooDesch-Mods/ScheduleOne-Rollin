@@ -9,6 +9,7 @@ namespace Rollin.Net
     ///   req.push vehicle player 1|0      -> push vehicle player|-1
     ///   req.pushin vehicle fwd steer     -> pushin vehicle fwd steer
     ///   req.tune vehicle key value       -> (host applies it through the Chassis tuning API)
+    ///   req.nitro vehicle 1|0            -> nitro vehicle 1|0            (the driver's nitro; everyone shows the flames)
     ///   req.sync player                  -> swap ... / push ...          (host: the current state for a late joiner)
     /// </summary>
     internal static class Sync
@@ -40,6 +41,7 @@ namespace Rollin.Net
                 case "req.push": Push.HostRequest(m.Int(0), m.Int(1), m.Arg(2) == "1"); break;
                 case "req.pushin": Push.HostInput(m.Int(0), m.Int(1), m.Int(2)); break;
                 case "req.tune": Tuning.Garage.HostRequest(m.Int(0), m.Arg(1), m.Arg(2)); break;
+                case "req.nitro": Boost.HostNitro(m.Int(0), m.Arg(1) == "1"); break;
                 case "req.sync":
                     Core.Log.Msg("[Net] player " + m.Arg(0) + " asked for the current wheelchairs.");
                     PropSwap.HostReplay();
@@ -60,6 +62,7 @@ namespace Rollin.Net
                     break;
                 case "push": Push.OnPush(m.Int(0), m.Int(1)); break;
                 case "pushin": Push.OnInput(m.Int(0), new Vector2(m.Int(1), m.Int(2))); break;
+                case "nitro": Tuning.Flames.OnNitro(m.Int(0), m.Arg(1) == "1"); break;
                 default: Core.Log.Warning("[Net] unknown state " + m + " - ignored."); break;
             }
         }

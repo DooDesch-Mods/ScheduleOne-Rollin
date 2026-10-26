@@ -21,6 +21,11 @@
   turn the push rims.
 - A second player can walk up behind an occupied chair and press **Push**. The pusher steers and pushes with their own
   movement keys, and the rider can still roll along. Press Interact again to let go.
+- Hold **Shift** (the game's sprint key) to sprint. Each push costs stamina, like on the skateboard.
+- Fit the Jerry Can Rocket and hold **Left Ctrl** for nitro: flames shoot out of the tailpipes. The tank refills by
+  itself.
+- Speeds, nitro duration and the nitro key are in MelonPreferences (`SpeedNormal`, `SpeedSprint`, `SpeedNitro`,
+  `NitroSeconds`, `NitroRechargeSeconds`, `NitroKey`).
 - Press **R** while you sit in a chair for the tuning menu (`GarageKey` in MelonPreferences). W and S pick a row, A and D change it. Tuning is free.
 - Everything is synced in co-op: who sits, who pushes, and every part on every chair. The host keeps each chair's
   tuning with the save.
@@ -42,7 +47,7 @@
 | Neon | Pink, Cyan, Green, Red, Purple, White |
 | Horn | Clown Horn, Rubber Duck, Freight Train, Charge!, La Cucaracha, Bicycle Horn |
 | Spoiler | Handle Wing |
-| Booster | Jerry Can Rocket (flame, light and thrust sound) |
+| Booster | Jerry Can Rocket (nitro on Left Ctrl, flames from the tailpipes) |
 | Exhaust | Twin Tailpipes (they smoke while you ride) |
 | Rims | Sports Rims, Muscle Rims |
 | Hat | Gnome Hat (it sits on the rider's head) |
