@@ -453,38 +453,41 @@ namespace Rollin.Tuning
         internal const string SeatNeon = "rollin_neon";
 
         /// <summary>
-        /// Moves the Chassis underglow to the underside of the seat: its strips are hidden and the same material runs as a
-        /// frame along the seat's edges on the chosen sides (the cargo box sits inside it), the two lights hang just below.
-        /// Chassis rebuilds the neon on every change, so a new one is fitted again on the next scan.
+        /// Moves the Chassis underglow to the underside of the seat. Its lights are spread from the seat's front edge to
+        /// the backrest just below it. Chassis builds the neon as lights only; an older Chassis that still draws strips gets
+        /// them hidden and the same material run as a frame along the seat's edges on the chosen sides (the cargo box sits
+        /// inside it). The <see cref="SeatNeon"/> child marks the neon as fitted, so the scan fits each one once; Chassis
+        /// rebuilds the neon on every change, and the new one is fitted on the next scan.
         /// </summary>
         internal static void FitNeon(LandVehicle lv, Transform neon)
         {
-            var r = neon.GetComponent<MeshRenderer>();
-            if (r == null) { Core.Log.Warning("[Models] the Chassis neon on net " + Net.Ids.Of(lv) + " has no renderer - it stays where Chassis put it."); return; }
             string value = ChassisApi.GetTuning(lv, "neon") ?? "";
             int comma = value.IndexOf(',');
             string sides = comma >= 0 ? value.Substring(comma + 1).ToLowerInvariant() : "fblr";
-            r.enabled = false;
 
             var frame = new GameObject(SeatNeon).transform;
             frame.SetParent(neon, false);
             // Inside the side rails (x 0.24) and between the backrest (z -0.214) and the seat's front edge (z 0.266).
             const float thick = 0.022f, x = 0.21f, back = -0.195f, front = 0.24f;
-            float y = SeatUnderside - thick * 0.5f;
-            var mat = r.sharedMaterial;
-            if (sides.IndexOf('l') >= 0) Strip(frame, new Vector3(-x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);
-            if (sides.IndexOf('r') >= 0) Strip(frame, new Vector3(x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);
-            if (sides.IndexOf('f') >= 0) Strip(frame, new Vector3(0f, y, front), new Vector3(2f * x + thick, thick, thick), mat);
-            if (sides.IndexOf('b') >= 0) Strip(frame, new Vector3(0f, y, back), new Vector3(2f * x + thick, thick, thick), mat);
-
-            int lights = 0;
-            foreach (var t in neon.GetComponentsInChildren<Transform>(true))
+            var r = neon.GetComponent<MeshRenderer>();
+            if (r != null)
             {
-                if (!t.name.StartsWith(ChassisNeonLight, StringComparison.Ordinal)) continue;
-                t.localPosition = new Vector3(0f, SeatUnderside - 0.06f, lights == 0 ? 0.1f : -0.2f);
-                lights++;
+                r.enabled = false;
+                float y = SeatUnderside - thick * 0.5f;
+                var mat = r.sharedMaterial;
+                if (sides.IndexOf('l') >= 0) Strip(frame, new Vector3(-x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);
+                if (sides.IndexOf('r') >= 0) Strip(frame, new Vector3(x, y, (back + front) * 0.5f), new Vector3(thick, thick, front - back), mat);
+                if (sides.IndexOf('f') >= 0) Strip(frame, new Vector3(0f, y, front), new Vector3(2f * x + thick, thick, thick), mat);
+                if (sides.IndexOf('b') >= 0) Strip(frame, new Vector3(0f, y, back), new Vector3(2f * x + thick, thick, thick), mat);
             }
-            Core.Log.Msg("[Models] neon on net " + Net.Ids.Of(lv) + " moved under the seat (" + sides + "), " + lights + " light(s).");
+
+            var lights = new List<Transform>();
+            foreach (var t in neon.GetComponentsInChildren<Transform>(true))
+                if (t.name.StartsWith(ChassisNeonLight, StringComparison.Ordinal)) lights.Add(t);
+            for (int i = 0; i < lights.Count; i++)
+                lights[i].localPosition = new Vector3(0f, SeatUnderside - 0.06f, Mathf.Lerp(front, back, (i + 0.5f) / lights.Count));
+            Core.Log.Msg("[Models] neon on net " + Net.Ids.Of(lv) + " moved under the seat (" + sides + "), " + lights.Count + " light(s)"
+                         + (r != null ? ", strips along the seat." : ", lights only."));
         }
 
         private static void Strip(Transform parent, Vector3 at, Vector3 size, Material mat)
