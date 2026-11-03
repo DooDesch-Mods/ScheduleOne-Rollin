@@ -4,6 +4,12 @@ All notable changes to Rollin are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to Semantic Versioning.
 
+## [1.1.1] - 2026-11-03
+
+### Fixed
+- Neon on the wheelchair glows under the seat again with Chassis 1.7.1 and later, and no longer writes a warning to
+  the log twice a second.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added
