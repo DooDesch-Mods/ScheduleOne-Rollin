@@ -2,6 +2,8 @@
 
 > 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rollin](https://support.doodesch.de/rollin).
 
+**Download:** [Nexus Mods](https://www.nexusmods.com/schedule1/mods/2927) · [Thunderstore](https://thunderstore.io/c/schedule-i/p/DooDesch/Rollin/) · [GitHub Releases](https://github.com/DooDesch-Mods/ScheduleOne-Rollin/releases)
+
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
 > rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
@@ -68,14 +70,28 @@
 ## Requirements
 
 - [MelonLoader](https://melonwiki.xyz/) 0.7.3 or newer
-- [Chassis](https://github.com/DooDesch-Mods/ScheduleOne-Chassis) 1.7.0 or newer, the vehicle framework Rollin is built on.
+- [Chassis](https://www.nexusmods.com/schedule1/mods/2918) 1.7.0 or newer, the vehicle framework Rollin is built on.
   Without Rollin, Chassis leaves the wheelchairs as props.
 
 ## Installation
 
+### Recommended: Nexus Mods
+
+1. Install **MelonLoader** for Schedule I ([melonwiki.xyz](https://melonwiki.xyz/)).
+2. Download Rollin from [Nexus Mods](https://www.nexusmods.com/schedule1/mods/2927) and install it with Vortex,
+   or put **`Rollin.dll`** into your Schedule I `Mods/` folder.
+3. Get [Chassis](https://www.nexusmods.com/schedule1/mods/2918) from its Nexus page the same way.
+
+### Thunderstore mod manager
+
+Install from the [Thunderstore page](https://thunderstore.io/c/schedule-i/p/DooDesch/Rollin/) with r2modman or Gale. Chassis is pulled in automatically.
+
+### Manual
+
 1. Install MelonLoader and Chassis.
 2. Put `Rollin.dll` into the game's `Mods` folder.
-3. In co-op, every player needs Rollin.
+
+In co-op, every player needs Rollin.
 
 ## For mod authors
 
