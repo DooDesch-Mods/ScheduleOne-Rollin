@@ -4,8 +4,6 @@
 
 **Download:** [Nexus Mods](https://www.nexusmods.com/schedule1/mods/2927) · [Thunderstore](https://thunderstore.io/c/schedule-i/p/DooDesch/Rollin/) · [GitHub Releases](https://github.com/DooDesch-Mods/ScheduleOne-Rollin/releases)
 
-[![Discord](https://mods.doodesch.de/img/badge.svg)](https://mods.doodesch.de)
-
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
 > rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
@@ -13,7 +11,7 @@
 ![Game](https://img.shields.io/badge/game-Schedule%20I-purple)
 ![MelonLoader](https://img.shields.io/badge/MelonLoader-0.7.3+-green)
 ![Needs Chassis](https://img.shields.io/badge/needs-Chassis-orange)
-[![Polyfill](https://polyfill.doomods.com/badge/rollin.svg)](https://polyfill.doomods.com/mod/rollin)
+[![Discord](https://mods.doodesch.de/img/badge.svg)](https://mods.doodesch.de) [![Polyfill](https://polyfill.doomods.com/badge/rollin.svg)](https://polyfill.doomods.com/mod/rollin)
 
 [![MLVScan Rollin.dll](https://mlvscan.com/attestations/att_k_n80jtwkCJb0KXLZ_xJA49v/badge.svg)](https://mlvscan.com/attestations/att_k_n80jtwkCJb0KXLZ_xJA49v)
 
