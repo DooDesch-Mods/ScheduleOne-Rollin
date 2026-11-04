@@ -4,6 +4,8 @@
 
 **Download:** [Nexus Mods](https://www.nexusmods.com/schedule1/mods/2927) · [Thunderstore](https://thunderstore.io/c/schedule-i/p/DooDesch/Rollin/) · [GitHub Releases](https://github.com/DooDesch-Mods/ScheduleOne-Rollin/releases)
 
+[![Discord](https://mods.doodesch.de/img/badge.svg)](https://mods.doodesch.de)
+
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
 > rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
@@ -98,6 +100,12 @@ In co-op, every player needs Rollin.
 Rollin uses only the public Chassis API: a vehicle profile for the seat and the handles, `PoseAsPusher` for the
 pusher's body, and `RegisterTuningPart` for every part. It is a working example of a modded vehicle with its own
 tuning parts. The Debug build adds the console command `rollin` (`rollin help` lists everything).
+
+## Community
+
+[![DooDesch Mods on Discord](https://mods.doodesch.de/img/card.svg)](https://mods.doodesch.de)
+
+Join the DooDesch Mods Discord: update pings, polls on what comes next, and playtests of new mods.
 
 ## Credits
 
