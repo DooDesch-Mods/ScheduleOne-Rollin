@@ -2,6 +2,10 @@
 
 > 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rollin](https://support.doodesch.de/rollin).
 
+> ⚠️ **A required mod is missing on Thunderstore?** Thunderstore sometimes takes one of my library mods off its listing, and then r2modman and Gale can't install it. Get it from Nexus Mods or GitHub instead and put the DLL into the `Mods` folder of your profile. Stuck? Ask in the [Discord](https://mods.doodesch.de).
+>
+> - **Chassis:** [Nexus Mods](https://www.nexusmods.com/schedule1/mods/2918) · [GitHub](https://github.com/DooDesch-Mods/ScheduleOne-Chassis/releases/latest)
+
 > Sit down in any wheelchair in Hyland Point and roll. A friend can grab the handles and push. Then strap a jerry can
 > rocket to the back, park a garden gnome between your legs, and honk La Cucaracha at the police.
 
